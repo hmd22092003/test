@@ -22,13 +22,22 @@ function runSemaphoreAlgorithm() {
   const philosophers = ["Triết gia 1", "Triết gia 2", "Triết gia 3", "Triết gia 4", "Triết gia 5"];
   const results = [];
   const maxEating = 3; // Giả sử mỗi triết gia ăn 3 lần
+  const maxPhilosophersEating = 2; // Giới hạn số triết gia có thể ăn cùng một lúc
 
-  philosophers.forEach(philosopher => {
-      for (let i = 0; i < maxEating; i++) {
-          results.push(`${philosopher} đang ăn...`);
+  for (let i = 0; i < maxEating; i++) {
+      const eatingPhilosophers = [];
+      
+      philosophers.forEach(philosopher => {
+          if (eatingPhilosophers.length < maxPhilosophersEating) {
+              results.push(`${philosopher} đang ăn...`);
+              eatingPhilosophers.push(philosopher);
+          }
+      });
+
+      eatingPhilosophers.forEach(philosopher => {
           results.push(`${philosopher} đã ăn xong.`);
-      }
-  });
+      });
+  }
 
   return results;
 }
@@ -37,13 +46,22 @@ function runMonitorAlgorithm() {
   const philosophers = ["Triết gia 1", "Triết gia 2", "Triết gia 3", "Triết gia 4", "Triết gia 5"];
   const results = [];
   const maxEating = 3; // Giả sử mỗi triết gia ăn 3 lần
+  const maxPhilosophersEating = 2; // Giới hạn số triết gia có thể ăn cùng một lúc
 
-  philosophers.forEach(philosopher => {
-      for (let i = 0; i < maxEating; i++) {
-          results.push(`${philosopher} đang ăn...`);
+  for (let i = 0; i < maxEating; i++) {
+      const eatingPhilosophers = [];
+      
+      philosophers.forEach(philosopher => {
+          if (eatingPhilosophers.length < maxPhilosophersEating) {
+              results.push(`${philosopher} đang ăn...`);
+              eatingPhilosophers.push(philosopher);
+          }
+      });
+
+      eatingPhilosophers.forEach(philosopher => {
           results.push(`${philosopher} đã ăn xong.`);
-      }
-  });
+      });
+  }
 
   return results;
 }
