@@ -21,54 +21,35 @@ document.getElementById('runButton').addEventListener('click', function() {
 function runSemaphore(num) {
     const forks = Array.from({ length: num }, () => new Semaphore(1));
     philosophers = Array.from({ length: num }, (_, i) => i);
-
-    // Specific case for philosophers states
-    const specificStates = {
-        0: { state: 'holding left fork', eating: false },
-        1: { state: 'eating', eating: true },
-        3: { state: 'thinking', eating: false },
-        4: { state: 'eating', eating: true },
-        5: { state: 'thinking', eating: false },
-    };
-
+    
+    // Start the philosophers
     philosophers.forEach(index => {
-        if (specificStates[index]) {
-            if (specificStates[index].eating) {
-                philosopherSemaphore(index, forks, true);
-            } else {
-                philosopherSemaphore(index, forks, false);
-            }
-        }
+        philosopherSemaphore(index, forks);
     });
 }
 
 // Function to handle Semaphore logic
-function philosopherSemaphore(index, forks, isEating) {
-    if (!isEating) {
+async function philosopherSemaphore(index, forks) {
+    while (true) {
         contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
-        setTimeout(() => {
-            if (index === 0) {
-                contentBox.innerHTML += `Triết gia ${index} lấy đũa bên trái...<br>`;
-            }
-            setTimeout(() => {
-                if (index === 0) {
-                    contentBox.innerHTML += `Triết gia ${index} không thể ăn vì thiếu đũa bên phải!<br>`;
-                }
-            }, randomSleep());
-        }, randomSleep());
-    } else {
+        await sleep(randomSleep());
+
         const leftFork = forks[index];
         const rightFork = forks[(index + 1) % forks.length];
 
-        leftFork.acquire();
-        rightFork.acquire();
-        
+        // Try to acquire forks
+        await leftFork.acquire();
+        await rightFork.acquire();
+
         contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
-        setTimeout(() => {
-            contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
-            leftFork.release();
-            rightFork.release();
-        }, randomSleep());
+        await sleep(randomSleep());
+        
+        contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
+        leftFork.release();
+        rightFork.release();
+        
+        // Simulate thinking again after eating
+        await sleep(randomSleep());
     }
 }
 
@@ -76,56 +57,44 @@ function philosopherSemaphore(index, forks, isEating) {
 function runMonitor(num) {
     const forks = Array.from({ length: num }, () => new Monitor());
     philosophers = Array.from({ length: num }, (_, i) => i);
-
-    // Specific case for philosophers states
-    const specificStates = {
-        0: { state: 'holding left fork', eating: false },
-        1: { state: 'eating', eating: true },
-        3: { state: 'thinking', eating: false },
-        4: { state: 'eating', eating: true },
-        5: { state: 'thinking', eating: false },
-    };
-
+    
+    // Start the philosophers
     philosophers.forEach(index => {
-        if (specificStates[index]) {
-            if (specificStates[index].eating) {
-                philosopherMonitor(index, forks, true);
-            } else {
-                philosopherMonitor(index, forks, false);
-            }
-        }
+        philosopherMonitor(index, forks);
     });
 }
 
 // Function to handle Monitor logic
-function philosopherMonitor(index, forks, isEating) {
-    if (!isEating) {
+async function philosopherMonitor(index, forks) {
+    while (true) {
         contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
-        setTimeout(() => {
-            if (index === 0) {
-                contentBox.innerHTML += `Triết gia ${index} lấy đũa bên trái...<br>`;
-            }
-            setTimeout(() => {
-                if (index === 0) {
-                    contentBox.innerHTML += `Triết gia ${index} không thể ăn vì thiếu đũa bên phải!<br>`;
-                }
-            }, randomSleep());
-        }, randomSleep());
-    } else {
+        await sleep(randomSleep());
+
         const monitor = forks[index];
 
-        monitor.take();
+        await monitor.take();
+        await monitor.take(); // simulate taking two forks
+        
         contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
-        setTimeout(() => {
-            contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
-            monitor.put();
-        }, randomSleep());
+        await sleep(randomSleep());
+        
+        contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
+        monitor.put();
+        monitor.put(); // simulate putting back two forks
+        
+        // Simulate thinking again after eating
+        await sleep(randomSleep());
     }
 }
 
 // Helper function to simulate random sleep time
 function randomSleep() {
     return Math.random() * 1000 + 500; // 500 to 1500 milliseconds
+}
+
+// Function to sleep asynchronously
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Semaphore class definition
@@ -136,13 +105,14 @@ class Semaphore {
     }
 
     acquire() {
-        if (this.value > 0) {
-            this.value--;
-        } else {
-            return new Promise(resolve => {
+        return new Promise((resolve) => {
+            if (this.value > 0) {
+                this.value--;
+                resolve();
+            } else {
                 this.waitQueue.push(resolve);
-            });
-        }
+            }
+        });
     }
 
     release() {
