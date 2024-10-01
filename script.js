@@ -3,18 +3,18 @@ document.getElementById("runButton").addEventListener("click", () => {
   const contentBox = document.getElementById("contentBox");
   contentBox.innerHTML = "Đang chạy...";
 
-  // Chạy cả hai phương pháp cùng một lúc
-  const semaphoreResults = runSemaphoreAlgorithm();
-  const monitorResults = runMonitorAlgorithm();
+  let results;
+
+  // Chạy giải thuật tương ứng
+  if (option === "Semaphore") {
+      results = runSemaphoreAlgorithm();
+  } else if (option === "Monitor") {
+      results = runMonitorAlgorithm();
+  }
 
   // Hiển thị kết quả
   setTimeout(() => {
-      contentBox.innerHTML = `
-          <h5>Kết quả với Semaphore:</h5>
-          <p>${semaphoreResults.join("<br>")}</p>
-          <h5>Kết quả với Monitor:</h5>
-          <p>${monitorResults.join("<br>")}</p>
-      `;
+      contentBox.innerHTML = results.join("<br>");
   }, 1000); // Đợi 1 giây để mô phỏng quá trình
 });
 
@@ -25,7 +25,7 @@ function runSemaphoreAlgorithm() {
   const maxPhilosophersEating = 2; // Giới hạn số triết gia có thể ăn cùng một lúc
 
   for (let i = 0; i < maxEating; i++) {
-      const eatingPhilosophers = [];
+      let eatingPhilosophers = [];
       
       philosophers.forEach(philosopher => {
           if (eatingPhilosophers.length < maxPhilosophersEating) {
@@ -34,6 +34,7 @@ function runSemaphoreAlgorithm() {
           }
       });
 
+      // Chờ cho các triết gia ăn xong
       eatingPhilosophers.forEach(philosopher => {
           results.push(`${philosopher} đã ăn xong.`);
       });
@@ -49,7 +50,7 @@ function runMonitorAlgorithm() {
   const maxPhilosophersEating = 2; // Giới hạn số triết gia có thể ăn cùng một lúc
 
   for (let i = 0; i < maxEating; i++) {
-      const eatingPhilosophers = [];
+      let eatingPhilosophers = [];
       
       philosophers.forEach(philosopher => {
           if (eatingPhilosophers.length < maxPhilosophersEating) {
@@ -58,6 +59,7 @@ function runMonitorAlgorithm() {
           }
       });
 
+      // Chờ cho các triết gia ăn xong
       eatingPhilosophers.forEach(philosopher => {
           results.push(`${philosopher} đã ăn xong.`);
       });
