@@ -3,22 +3,21 @@ let philosophers = [];
 let contentBox = document.getElementById('contentBox');
 let numPhilosophersInput = document.getElementById('numPhilosophers');
 let eatCount = []; // To track how many times each philosopher has eaten
-let totalPhilosophers; // Total number of philosophers
 
 // Event listener for the Run button
 document.getElementById('runButton').addEventListener('click', function() {
-    totalPhilosophers = parseInt(numPhilosophersInput.value);
+    const numPhilosophers = parseInt(numPhilosophersInput.value);
     const selectedAlgorithm = document.getElementById('optionSelect').value;
-    
+
     contentBox.innerHTML = ''; // Clear previous results
 
     // Reset eatCount for each run
-    eatCount = Array(totalPhilosophers).fill(0); 
+    eatCount = Array(numPhilosophers).fill(0); 
 
     if (selectedAlgorithm === "Semaphore") {
-        runSemaphore(totalPhilosophers);
+        runSemaphore(numPhilosophers);
     } else if (selectedAlgorithm === "Monitor") {
-        runMonitor(totalPhilosophers);
+        runMonitor(numPhilosophers);
     }
 });
 
@@ -27,43 +26,41 @@ function runSemaphore(num) {
     const forks = Array.from({ length: num }, () => new Semaphore(1));
     philosophers = Array.from({ length: num }, (_, i) => i);
     
-    // Start the philosophers
-    philosophers.forEach(index => {
-        philosopherSemaphore(index, forks);
-    });
+    // Start the philosophers in order
+    (async () => {
+        for (let index = 0; index < num; index++) {
+            await philosopherSemaphore(index, forks);
+        }
+    })();
 }
 
 // Function to handle Semaphore logic
 async function philosopherSemaphore(index, forks) {
-    while (eatCount[index] < 1) { // Only eat once
-        try {
-            // Thinking
-            contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
-            await sleep(randomSleep());
+    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
+        // Thinking
+        contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
+        await sleep(randomSleep());
 
-            // Take Chopsticks
-            const leftFork = forks[index];
-            const rightFork = forks[(index + 1) % forks.length];
+        const leftFork = forks[index];
+        const rightFork = forks[(index + 1) % forks.length];
 
-            await leftFork.acquire(); // Acquire left chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-            
-            await rightFork.acquire(); // Acquire right chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
+        // Try to acquire forks
+        await leftFork.acquire();
+        contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
+        
+        await rightFork.acquire();
+        contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
+        await sleep(randomSleep());
 
-            // Eating
-            await sleep(randomSleep());
+        eatCount[index]++; // Increase the eat count
+        leftFork.release();
+        rightFork.release();
 
-            // Put Chopsticks
-            leftFork.release(); // Release left chopstick
-            rightFork.release(); // Release right chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa.<br>`;
-            eatCount[index]++; // Increase eat count
-        } catch (e) {
-            console.error(`Error with philosopher ${index}:`, e);
-        }
+        // Put down forks
+        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
+        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
     }
-    checkAllPhilosophersDone(); // Check if all philosophers have eaten
+    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
 }
 
 // Function to run Monitor algorithm
@@ -71,47 +68,44 @@ function runMonitor(num) {
     const forks = Array.from({ length: num }, () => new Monitor());
     philosophers = Array.from({ length: num }, (_, i) => i);
     
-    // Start the philosophers
-    philosophers.forEach(index => {
-        philosopherMonitor(index, forks);
-    });
+    // Start the philosophers in order
+    (async () => {
+        for (let index = 0; index < num; index++) {
+            await philosopherMonitor(index, forks);
+        }
+    })();
 }
 
 // Function to handle Monitor logic
 async function philosopherMonitor(index, forks) {
-    while (eatCount[index] < 1) { // Only eat once
-        try {
-            // Thinking
-            contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
-            await sleep(randomSleep());
+    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
+        // Thinking
+        contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
+        await sleep(randomSleep());
 
-            const monitor = forks[index];
+        const monitor = forks[index];
 
-            await monitor.take(); // Acquire left chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-            
-            await monitor.take(); // Acquire right chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
+        await monitor.take();
+        contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
+        
+        await monitor.take(); // simulate taking two forks
+        contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
+        await sleep(randomSleep());
 
-            // Eating
-            await sleep(randomSleep());
-
-            // Put Chopsticks
-            monitor.put(); // Release left chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
-            monitor.put(); // Release right chopstick
-            contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
-            eatCount[index]++; // Increase eat count
-        } catch (e) {
-            console.error(`Error with philosopher ${index}:`, e);
-        }
+        eatCount[index]++; // Increase the eat count
+        monitor.put();
+        monitor.put(); // simulate putting back two forks
+        
+        // Put down forks
+        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
+        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
     }
-    checkAllPhilosophersDone(); // Check if all philosophers have eaten
+    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
 }
 
 // Function to check if all philosophers are done eating
 function checkAllPhilosophersDone() {
-    if (eatCount.every(count => count >= 1)) { // Check if all philosophers have eaten at least once
+    if (eatCount.every(count => count >= 1)) { // Check if all philosophers have eaten
         contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";
     }
 }
