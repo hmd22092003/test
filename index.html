@@ -18,7 +18,7 @@
   <header class="bg-primary text-white text-center py-4">
     <h1>Jamstack & Synchronous</h1>
   </header>
-
+  
   <!-- Main Content -->
   <div class="container my-5">
     <div class="row">
@@ -38,14 +38,14 @@
           </div>
           <div class="col-6 d-flex justify-content-end">
             <select id="optionSelect" class="form-select form-select-lg">
-              <option value="Semaphore">Semaphore</option>
               <option value="Monitor">Monitor</option>
+              <option value="Semaphore">Semaphore</option>
             </select>
           </div>
         </div>
 
         <!-- Row 2: Display Box -->
-        <div id="contentBox" class="content-box p-3 w-100 border border-dark" style=" width: 500px;height: 600px;border-radius: 5px; overflow-y: auto;">
+        <div id="contentBox" class="content-box p-3 w-100 border border-dark" style="width: 500px;height: 600px;border-radius: 5px; overflow-y: auto;">
           Kết quả sẽ hiển thị ở đây...
         </div>
       </div>
@@ -56,6 +56,26 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <!-- Custom JS -->
   <script src="script.js"></script>
+  <script>
+    document.getElementById('runButton').addEventListener('click', () => {
+        const selectedAlgorithm = document.getElementById('optionSelect').value;
+
+        // Clear the content box before starting
+        const contentBox = document.getElementById('contentBox');
+        contentBox.innerHTML = "Kết quả sẽ hiển thị ở đây...";
+
+        // Run the selected algorithm
+        if (selectedAlgorithm === "Monitor") {
+            // Start the philosophers using the Monitor algorithm
+            // Your Monitor algorithm code goes here (make sure to integrate it)
+            philosopher(0); // You may need to adjust how you call the function
+        } else if (selectedAlgorithm === "Semaphore") {
+            // Start the philosophers using the Semaphore algorithm
+            // Your Semaphore algorithm code goes here (make sure to integrate it)
+            // Example: semaphorePhilosopher(0);
+        }
+    });
+  </script>
 </body>
 
 </html>
