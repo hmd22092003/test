@@ -1,12 +1,12 @@
 class Semaphore {
-  constructor(count) {
-      this.count = count;
+  constructor(value) {
+      this.value = value;
       this.queue = [];
   }
 
   async wait() {
-      if (this.count > 0) {
-          this.count--;
+      if (this.value > 0) {
+          this.value--;
       } else {
           await new Promise(resolve => this.queue.push(resolve));
       }
@@ -14,115 +14,80 @@ class Semaphore {
 
   signal() {
       if (this.queue.length > 0) {
-          const resolve = this.queue.shift();
-          resolve();
+          this.queue.shift()();
       } else {
-          this.count++;
+          this.value++;
       }
-  }
-}
-
-const forks = Array.from({ length: 5 }, () => new Semaphore(1));
-const diningSemaphore = new Semaphore(2);
-const maxMeals = 3; // Số lần ăn tối đa của mỗi triết gia
-
-async function philosopherSemaphore(id) {
-  const outputBox = document.getElementById('contentBox');
-  let meals = 0; // Biến để đếm số lần ăn
-  while (meals < maxMeals) {
-      outputBox.innerHTML += `Triết gia ${id} đang suy nghĩ...<br>`;
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-
-      outputBox.innerHTML += `Triết gia ${id} muốn ăn...<br>`;
-      await diningSemaphore.wait();
-
-      await forks[id].wait();
-      outputBox.innerHTML += `Triết gia ${id} đã lấy muỗng trái<br>`;
-
-      await forks[(id + 1) % 5].wait();
-      outputBox.innerHTML += `Triết gia ${id} đã lấy muỗng phải<br>`;
-
-      outputBox.innerHTML += `Triết gia ${id} đang ăn...<br>`;
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
-
-      forks[(id + 1) % 5].signal();
-      forks[id].signal();
-      diningSemaphore.signal();
-      meals++; // Tăng số lần ăn
-      outputBox.innerHTML += `Triết gia ${id} đã ăn xong. Số lần ăn: ${meals}<br>`;
   }
 }
 
 class Monitor {
   constructor() {
       this.mutex = new Semaphore(1);
-      this.eatingCount = 0;
+      this.philosopherCount = 0; // Đếm số triết gia đang ăn
+      this.philosopherQueue = [];
   }
 
   async enter() {
       await this.mutex.wait();
-  }
-
-  leave() {
+      this.philosopherCount++;
+      if (this.philosopherCount === 1) {
+          await new Promise(resolve => {
+              this.philosopherQueue.push(resolve);
+          });
+      }
       this.mutex.signal();
   }
 
-  async eat(philosopher) {
-      await this.enter();
-      while (this.eatingCount >= 2) {
-          this.leave();
-          await new Promise(resolve => setTimeout(resolve, 100));
-          await this.enter();
+  async exit() {
+      await this.mutex.wait();
+      this.philosopherCount--;
+      if (this.philosopherCount === 0) {
+          this.philosopherQueue.forEach(resolve => resolve());
+          this.philosopherQueue = [];
       }
-      this.eatingCount++;
-      const outputBox = document.getElementById('contentBox');
-      outputBox.innerHTML += `Triết gia ${philosopher} đang ăn...<br>`;
-      this.leave();
+      this.mutex.signal();
   }
 
-  async doneEating(philosopher) {
-      await this.enter();
-      this.eatingCount--;
-      const outputBox = document.getElementById('contentBox');
-      outputBox.innerHTML += `Triết gia ${philosopher} đã ăn xong.<br>`;
-      this.leave();
+  async eat(forks) {
+      await this.enter(); // Vào Monitor
+      await forks[0].wait(); // Lấy muỗng trái
+      await forks[1].wait(); // Lấy muỗng phải
+  }
+
+  async leave(forks) {
+      forks[1].signal(); // Thả muỗng phải
+      forks[0].signal(); // Thả muỗng trái
+      await this.exit(); // Ra khỏi Monitor
   }
 }
 
+// Định nghĩa số lượng triết gia và muỗng
+const numPhilosophers = 5;
+const forks = Array.from({ length: numPhilosophers }, () => new Semaphore(1));
 const monitor = new Monitor();
 
-async function philosopherMonitor(id) {
+// Hàm triết gia
+async function philosopher(index) {
   const outputBox = document.getElementById('contentBox');
-  let meals = 0; // Biến để đếm số lần ăn
-  while (meals < maxMeals) {
-      outputBox.innerHTML += `Triết gia ${id} đang suy nghĩ...<br>`;
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
-      outputBox.innerHTML += `Triết gia ${id} muốn ăn...<br>`;
-      await monitor.eat(id);
+  while (true) {
+      outputBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
+      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 1000)); // Suy nghĩ trong 1-5 giây
 
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+      const leftForkIndex = index;
+      const rightForkIndex = (index + 1) % numPhilosophers;
 
-      await monitor.doneEating(id);
-      meals++; // Tăng số lần ăn
+      await monitor.eat([forks[leftForkIndex], forks[rightForkIndex]]); // Ăn
+
+      outputBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
+      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 5000) + 1000)); // Ăn trong 1-5 giây
+
+      await monitor.leave([forks[leftForkIndex], forks[rightForkIndex]]); // Thả muỗng
   }
 }
 
-// Chạy thuật toán dựa trên lựa chọn
-document.getElementById('runButton').onclick = function () {
-  const selectedAlgorithm = document.getElementById('optionSelect').value;
-
-  // Xóa nội dung cũ
-  document.getElementById('contentBox').innerHTML = '';
-
-  // Khởi động các triết gia
-  if (selectedAlgorithm === 'Semaphore') {
-      for (let i = 0; i < 5; i++) {
-          philosopherSemaphore(i);
-      }
-  } else if (selectedAlgorithm === 'Monitor') {
-      for (let i = 0; i < 5; i++) {
-          philosopherMonitor(i);
-      }
-  }
-};
+// Khởi động các triết gia
+for (let i = 0; i < numPhilosophers; i++) {
+  philosopher(i);
+}
