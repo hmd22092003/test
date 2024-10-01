@@ -2,6 +2,7 @@
 let philosophers = [];
 let contentBox = document.getElementById('contentBox');
 let numPhilosophersInput = document.getElementById('numPhilosophers');
+let eatCount = []; // To track how many times each philosopher has eaten
 
 // Event listener for the Run button
 document.getElementById('runButton').addEventListener('click', function() {
@@ -9,6 +10,9 @@ document.getElementById('runButton').addEventListener('click', function() {
     const selectedAlgorithm = document.getElementById('optionSelect').value;
     
     contentBox.innerHTML = ''; // Clear previous results
+
+    // Reset eatCount for each run
+    eatCount = Array(numPhilosophers).fill(0); 
 
     if (selectedAlgorithm === "Semaphore") {
         runSemaphore(numPhilosophers);
@@ -30,7 +34,7 @@ function runSemaphore(num) {
 
 // Function to handle Semaphore logic
 async function philosopherSemaphore(index, forks) {
-    while (true) {
+    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
         contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
         await sleep(randomSleep());
 
@@ -43,7 +47,8 @@ async function philosopherSemaphore(index, forks) {
 
         contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
         await sleep(randomSleep());
-        
+
+        eatCount[index]++; // Increase the eat count
         contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
         leftFork.release();
         rightFork.release();
@@ -51,6 +56,7 @@ async function philosopherSemaphore(index, forks) {
         // Simulate thinking again after eating
         await sleep(randomSleep());
     }
+    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
 }
 
 // Function to run Monitor algorithm
@@ -66,7 +72,7 @@ function runMonitor(num) {
 
 // Function to handle Monitor logic
 async function philosopherMonitor(index, forks) {
-    while (true) {
+    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
         contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
         await sleep(randomSleep());
 
@@ -77,13 +83,22 @@ async function philosopherMonitor(index, forks) {
         
         contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
         await sleep(randomSleep());
-        
+
+        eatCount[index]++; // Increase the eat count
         contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
         monitor.put();
         monitor.put(); // simulate putting back two forks
         
         // Simulate thinking again after eating
         await sleep(randomSleep());
+    }
+    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
+}
+
+// Function to check if all philosophers are done eating
+function checkAllPhilosophersDone() {
+    if (eatCount.every(count => count >= 1)) { // Check if all philosophers have eaten
+        contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";
     }
 }
 
