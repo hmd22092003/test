@@ -47,6 +47,7 @@ async function philosopherSemaphore(index, forks) {
 
             await leftFork.acquire(); // Acquire left chopstick
             contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
+            
             await rightFork.acquire(); // Acquire right chopstick
             contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
 
@@ -112,8 +113,6 @@ async function philosopherMonitor(index, forks) {
 function checkAllPhilosophersDone() {
     if (eatCount.every(count => count >= 1)) { // Check if all philosophers have eaten at least once
         contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";
-        // Optionally stop further executions or clear results
-        // You can also consider stopping the simulation or disabling buttons here.
     }
 }
 
