@@ -32,14 +32,14 @@ let eatCount = Array(numPhilosophers).fill(0); // Đếm số lần ăn của m�
 async function philosopherSemaphore(index) {
     while (eatCount[index] < numEats) {
         results.push(`Philosopher ${index} is thinking...`);
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500)); // Giảm thời gian chờ
 
         await forks[index].acquire();
         await forks[(index + 1) % numPhilosophers].acquire();
 
         results.push(`Philosopher ${index} is eating...`);
         eatCount[index]++;
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500)); // Giảm thời gian chờ
 
         forks[index].release();
         forks[(index + 1) % numPhilosophers].release();
@@ -66,7 +66,7 @@ const monitor = new Monitor();
 async function philosopherMonitor(index) {
     while (eatCount[index] < numEats) {
         results.push(`Philosopher ${index} is thinking...`);
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500)); // Giảm thời gian chờ
 
         await monitor.enter();
 
@@ -75,7 +75,7 @@ async function philosopherMonitor(index) {
 
         results.push(`Philosopher ${index} is eating...`);
         eatCount[index]++;
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 500)); // Giảm thời gian chờ
 
         forks[index].release();
         forks[(index + 1) % numPhilosophers].release();
