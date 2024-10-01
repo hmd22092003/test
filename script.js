@@ -1,92 +1,128 @@
-class Semaphore {
-  constructor(value) {
-      this.value = value;
-      this.waiting = [];
-  }
+// Global variables
+let philosophers = [];
+let contentBox = document.getElementById('contentBox');
+let numPhilosophersInput = document.getElementById('numPhilosophers');
 
-  acquire() {
-      if (this.value > 0) {
-          this.value--;
-          return Promise.resolve();
-      } else {
-          return new Promise((resolve) => {
-              this.waiting.push(resolve);
-          });
-      }
-  }
+// Event listener for the Run button
+document.getElementById('runButton').addEventListener('click', function() {
+    const numPhilosophers = parseInt(numPhilosophersInput.value);
+    const selectedAlgorithm = document.getElementById('optionSelect').value;
+    
+    contentBox.innerHTML = ''; // Clear previous results
 
-  release() {
-      this.value++;
-      if (this.waiting.length > 0) {
-          const resolve = this.waiting.shift();
-          resolve();
-      }
-  }
-}
-
-const N = 5; // Số triết gia
-const forks = Array.from({ length: N }, () => new Semaphore(1));
-
-function updateContent(message) {
-  const contentBox = document.getElementById('contentBox');
-  contentBox.innerHTML += `<p>${message}</p>`;
-}
-
-async function philosopherSemaphore(index) {
-  updateContent(`Triết gia ${index} đang suy nghĩ...`);
-  await sleep(Math.floor(Math.random() * 2000) + 1000); // Suy nghĩ
-
-  await forks[index].acquire(); // Cầm cái nĩa bên trái
-  await forks[(index + 1) % N].acquire(); // Cầm cái nĩa bên phải
-
-  updateContent(`Triết gia ${index} đang ăn...`);
-  await sleep(Math.floor(Math.random() * 2000) + 1000); // Ăn
-
-  updateContent(`Triết gia ${index} đã ăn xong.`);
-  forks[index].release(); // Thả cái nĩa bên trái
-  forks[(index + 1) % N].release(); // Thả cái nĩa bên phải
-}
-
-async function philosopherMonitor(index) {
-  updateContent(`Triết gia ${index} đang suy nghĩ...`);
-  await sleep(Math.floor(Math.random() * 2000) + 1000); // Suy nghĩ
-
-  await forks[index].acquire(); // Cầm cái nĩa bên trái
-  await forks[(index + 1) % N].acquire(); // Cầm cái nĩa bên phải
-
-  updateContent(`Triết gia ${index} đang ăn...`);
-  await sleep(Math.floor(Math.random() * 2000) + 1000); // Ăn
-
-  updateContent(`Triết gia ${index} đã ăn xong.`);
-  forks[index].release(); // Thả cái nĩa bên trái
-  forks[(index + 1) % N].release(); // Thả cái nĩa bên phải
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-document.getElementById('runButton').addEventListener('click', () => {
-  const selectedAlgorithm = document.getElementById('optionSelect').value;
-
-  // Clear the content box before starting
-  const contentBox = document.getElementById('contentBox');
-  contentBox.innerHTML = "Kết quả sẽ hiển thị ở đây...";
-
-  // Run the selected algorithm
-  const philosopherPromises = [];
-  if (selectedAlgorithm === "Monitor") {
-      for (let i = 0; i < N; i++) {
-          philosopherPromises.push(philosopherMonitor(i));
-      }
-  } else if (selectedAlgorithm === "Semaphore") {
-      for (let i = 0; i < N; i++) {
-          philosopherPromises.push(philosopherSemaphore(i));
-      }
-  }
-
-  // Chờ tất cả triết gia ăn xong
-  Promise.all(philosopherPromises).then(() => {
-      updateContent("Tất cả triết gia đã ăn xong.");
-  });
+    if (selectedAlgorithm === "Semaphore") {
+        runSemaphore(numPhilosophers);
+    } else if (selectedAlgorithm === "Monitor") {
+        runMonitor(numPhilosophers);
+    }
 });
+
+// Function to run Semaphore algorithm
+function runSemaphore(num) {
+    const forks = Array.from({ length: num }, () => new Semaphore(1));
+    philosophers = Array.from({ length: num }, (_, i) => i);
+
+    philosophers.forEach(index => {
+        philosopherSemaphore(index, forks);
+    });
+}
+
+// Function to handle Semaphore logic
+function philosopherSemaphore(index, forks) {
+    contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
+    setTimeout(() => {
+        contentBox.innerHTML += `Triết gia ${index} lấy đũa...<br>`;
+        
+        const leftFork = forks[index];
+        const rightFork = forks[(index + 1) % forks.length];
+        
+        leftFork.acquire();
+        rightFork.acquire();
+        
+        contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
+        setTimeout(() => {
+            contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
+            leftFork.release();
+            rightFork.release();
+        }, randomSleep());
+    }, randomSleep());
+}
+
+// Function to run Monitor algorithm
+function runMonitor(num) {
+    const forks = Array.from({ length: num }, () => new Monitor());
+    philosophers = Array.from({ length: num }, (_, i) => i);
+
+    philosophers.forEach(index => {
+        philosopherMonitor(index, forks);
+    });
+}
+
+// Function to handle Monitor logic
+function philosopherMonitor(index, forks) {
+    contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
+    setTimeout(() => {
+        contentBox.innerHTML += `Triết gia ${index} lấy đũa...<br>`;
+        
+        const monitor = forks[index];
+        
+        monitor.take();
+        contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
+        setTimeout(() => {
+            contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
+            monitor.put();
+        }, randomSleep());
+    }, randomSleep());
+}
+
+// Helper function to simulate random sleep time
+function randomSleep() {
+    return Math.random() * 1000 + 500; // 500 to 1500 milliseconds
+}
+
+// Semaphore class definition
+class Semaphore {
+    constructor(value) {
+        this.value = value;
+        this.waitQueue = [];
+    }
+
+    acquire() {
+        if (this.value > 0) {
+            this.value--;
+        } else {
+            return new Promise(resolve => {
+                this.waitQueue.push(resolve);
+            });
+        }
+    }
+
+    release() {
+        if (this.waitQueue.length > 0) {
+            const resolve = this.waitQueue.shift();
+            resolve();
+        } else {
+            this.value++;
+        }
+    }
+}
+
+// Monitor class definition
+class Monitor {
+    constructor() {
+        this.mutex = new Semaphore(1);
+        this.waiting = 0;
+    }
+
+    async take() {
+        await this.mutex.acquire();
+        this.waiting++;
+        this.mutex.release();
+    }
+
+    async put() {
+        await this.mutex.acquire();
+        this.waiting--;
+        this.mutex.release();
+    }
+}
