@@ -24,10 +24,12 @@ class Semaphore {
 
 const forks = Array.from({ length: 5 }, () => new Semaphore(1));
 const diningSemaphore = new Semaphore(2);
+const maxMeals = 3; // Số lần ăn tối đa của mỗi triết gia
 
 async function philosopherSemaphore(id) {
   const outputBox = document.getElementById('contentBox');
-  while (true) {
+  let meals = 0; // Biến để đếm số lần ăn
+  while (meals < maxMeals) {
       outputBox.innerHTML += `Triết gia ${id} đang suy nghĩ...<br>`;
       await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
@@ -46,7 +48,8 @@ async function philosopherSemaphore(id) {
       forks[(id + 1) % 5].signal();
       forks[id].signal();
       diningSemaphore.signal();
-      outputBox.innerHTML += `Triết gia ${id} đã ăn xong.<br>`;
+      meals++; // Tăng số lần ăn
+      outputBox.innerHTML += `Triết gia ${id} đã ăn xong. Số lần ăn: ${meals}<br>`;
   }
 }
 
@@ -90,7 +93,8 @@ const monitor = new Monitor();
 
 async function philosopherMonitor(id) {
   const outputBox = document.getElementById('contentBox');
-  while (true) {
+  let meals = 0; // Biến để đếm số lần ăn
+  while (meals < maxMeals) {
       outputBox.innerHTML += `Triết gia ${id} đang suy nghĩ...<br>`;
       await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
@@ -100,6 +104,7 @@ async function philosopherMonitor(id) {
       await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
       await monitor.doneEating(id);
+      meals++; // Tăng số lần ăn
   }
 }
 
