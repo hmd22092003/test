@@ -1,5 +1,6 @@
 const numPhilosophers = 5;
 const numEats = 3; // Số lần ăn tối đa của mỗi triết gia
+let results = []; // Kết quả tổng hợp
 
 // Semaphore
 class Semaphore {
@@ -27,17 +28,16 @@ class Semaphore {
 
 const forks = Array.from({ length: numPhilosophers }, () => new Semaphore(1));
 let eatCount = Array(numPhilosophers).fill(0); // Đếm số lần ăn của mỗi triết gia
-let semaphoreResults = []; // Kết quả cho Semaphore
 
-async function philosopher(index) {
+async function philosopherSemaphore(index) {
     while (eatCount[index] < numEats) {
-        semaphoreResults.push(`Philosopher ${index} is thinking...`);
+        results.push(`Philosopher ${index} is thinking...`);
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
         await forks[index].acquire();
         await forks[(index + 1) % numPhilosophers].acquire();
 
-        semaphoreResults.push(`Philosopher ${index} is eating...`);
+        results.push(`Philosopher ${index} is eating...`);
         eatCount[index]++;
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
@@ -62,11 +62,10 @@ class Monitor {
 }
 
 const monitor = new Monitor();
-let monitorResults = []; // Kết quả cho Monitor
 
 async function philosopherMonitor(index) {
     while (eatCount[index] < numEats) {
-        monitorResults.push(`Philosopher ${index} is thinking...`);
+        results.push(`Philosopher ${index} is thinking...`);
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
         await monitor.enter();
@@ -74,7 +73,7 @@ async function philosopherMonitor(index) {
         await forks[index].acquire();
         await forks[(index + 1) % numPhilosophers].acquire();
 
-        monitorResults.push(`Philosopher ${index} is eating...`);
+        results.push(`Philosopher ${index} is eating...`);
         eatCount[index]++;
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000));
 
@@ -87,33 +86,30 @@ async function philosopherMonitor(index) {
 
 // Hiển thị kết quả
 function displayResults() {
-    const contentBox = document.getElementById('contentBox');
-    contentBox.innerHTML = "<h3>Kết quả với Semaphore:</h3>" + semaphoreResults.join('<br>') +
-        "<h3>Kết quả với Monitor:</h3>" + monitorResults.join('<br>');
+    const resultBox = document.getElementById('resultBox');
+    resultBox.innerHTML = results.join('<br>');
 }
 
-// Chạy cả hai giải thuật khi nhấn nút
+// Chạy giải thuật dựa trên lựa chọn
 document.getElementById('runButton').addEventListener('click', async () => {
     // Reset kết quả
     eatCount.fill(0);
-    semaphoreResults = [];
-    monitorResults = [];
+    results = [];
 
-    // Chạy Semaphore
-    const semaphorePromises = [];
+    const selectedAlgorithm = document.getElementById('optionSelect').value;
+
+    // Chạy Semaphore hoặc Monitor dựa trên lựa chọn
+    const promises = [];
     for (let i = 0; i < numPhilosophers; i++) {
-        semaphorePromises.push(philosopher(i));
+        if (selectedAlgorithm === 'Semaphore') {
+            promises.push(philosopherSemaphore(i));
+        } else {
+            promises.push(philosopherMonitor(i));
+        }
     }
 
-    // Chạy Monitor
-    const monitorPromises = [];
-    for (let i = 0; i < numPhilosophers; i++) {
-        monitorPromises.push(philosopherMonitor(i));
-    }
-
-    // Đợi cho cả hai chạy xong
-    await Promise.all(semaphorePromises);
-    await Promise.all(monitorPromises);
+    // Đợi cho các triết gia chạy xong
+    await Promise.all(promises);
 
     // Hiển thị kết quả sau khi hoàn thành
     displayResults();
