@@ -1,62 +1,49 @@
-document.getElementById('runButton').addEventListener('click', () => {
-    const selectedOption = document.getElementById('optionSelect').value;
-    const content = document.getElementById('contentBox').innerText;
-    alert('You selected: ' + selectedOption + '\nDisplayed content: ' + content);
-  });
-  
-  // script.js
+document.getElementById("runButton").addEventListener("click", () => {
+  const option = document.getElementById("optionSelect").value;
+  const contentBox = document.getElementById("contentBox");
+  contentBox.innerHTML = "Đang chạy...";
 
-// script.js
+  // Chạy cả hai phương pháp cùng một lúc
+  const semaphoreResults = runSemaphoreAlgorithm();
+  const monitorResults = runMonitorAlgorithm();
 
-// Truy cập các phần tử trong DOM
-const runButton = document.getElementById('runButton');
-const optionSelect = document.getElementById('optionSelect');
-const contentBox = document.getElementById('contentBox');
-
-// Sự kiện khi nhấn nút "Run"
-runButton.addEventListener('click', () => {
-  const selectedOption = optionSelect.value; // Lấy giá trị từ combo box
-
-  // Kiểm tra tùy chọn đã chọn là Semaphore hay Monitor
-  if (selectedOption === 'Semaphore') {
-    simulateSemaphore();
-  } else if (selectedOption === 'Monitor') {
-    simulateMonitor();
-  }
+  // Hiển thị kết quả
+  setTimeout(() => {
+      contentBox.innerHTML = `
+          <h5>Kết quả với Semaphore:</h5>
+          <p>${semaphoreResults.join("<br>")}</p>
+          <h5>Kết quả với Monitor:</h5>
+          <p>${monitorResults.join("<br>")}</p>
+      `;
+  }, 1000); // Đợi 1 giây để mô phỏng quá trình
 });
 
-// Mô phỏng giải thuật Semaphore
-function simulateSemaphore() {
-  contentBox.innerText = 'Running Semaphore Algorithm...';
-  
-  // Đơn giản mô phỏng quá trình ăn và suy nghĩ
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 1 is thinking...';
-  }, 1000);
-  
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 1 is eating...';
-  }, 3000);
-  
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 1 finished eating.';
-  }, 5000);
+function runSemaphoreAlgorithm() {
+  const philosophers = ["Triết gia 1", "Triết gia 2", "Triết gia 3", "Triết gia 4", "Triết gia 5"];
+  const results = [];
+  const maxEating = 3; // Giả sử mỗi triết gia ăn 3 lần
+
+  philosophers.forEach(philosopher => {
+      for (let i = 0; i < maxEating; i++) {
+          results.push(`${philosopher} đang ăn...`);
+          results.push(`${philosopher} đã ăn xong.`);
+      }
+  });
+
+  return results;
 }
 
-// Mô phỏng giải thuật Monitor
-function simulateMonitor() {
-  contentBox.innerText = 'Running Monitor Algorithm...';
-  
-  // Đơn giản mô phỏng quá trình ăn và suy nghĩ
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 2 is thinking...';
-  }, 1000);
-  
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 2 is eating...';
-  }, 3000);
-  
-  setTimeout(() => {
-    contentBox.innerText = 'Philosopher 2 finished eating.';
-  }, 5000);
+function runMonitorAlgorithm() {
+  const philosophers = ["Triết gia 1", "Triết gia 2", "Triết gia 3", "Triết gia 4", "Triết gia 5"];
+  const results = [];
+  const maxEating = 3; // Giả sử mỗi triết gia ăn 3 lần
+
+  philosophers.forEach(philosopher => {
+      for (let i = 0; i < maxEating; i++) {
+          results.push(`${philosopher} đang ăn...`);
+          results.push(`${philosopher} đã ăn xong.`);
+      }
+  });
+
+  return results;
 }
