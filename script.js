@@ -1,18 +1,15 @@
-// Global variables
 let philosophers = [];
 let contentBox = document.getElementById('contentBox');
 let numPhilosophersInput = document.getElementById('numPhilosophers');
-let eatCount = []; // To track how many times each philosopher has eaten
+let eatCount = []; // Đếm số lần mỗi triết gia ăn
 
-// Event listener for the Run button
 document.getElementById('runButton').addEventListener('click', function() {
     const numPhilosophers = parseInt(numPhilosophersInput.value);
     const selectedAlgorithm = document.getElementById('optionSelect').value;
 
-    contentBox.innerHTML = ''; // Clear previous results
+    contentBox.innerHTML = ''; // Xóa kết quả trước đó
 
-    // Reset eatCount for each run
-    eatCount = Array(numPhilosophers).fill(0); 
+    eatCount = Array(numPhilosophers).fill(0); // Khởi tạo số lần ăn
 
     if (selectedAlgorithm === "Semaphore") {
         runSemaphore(numPhilosophers);
@@ -21,106 +18,101 @@ document.getElementById('runButton').addEventListener('click', function() {
     }
 });
 
-// Function to run Semaphore algorithm
+// Hàm chạy thuật toán Semaphore
 function runSemaphore(num) {
     const forks = Array.from({ length: num }, () => new Semaphore(1));
     philosophers = Array.from({ length: num }, (_, i) => i);
-    
-    // Start the philosophers in order
-    (async () => {
-        for (let index = 0; index < num; index++) {
-            await philosopherSemaphore(index, forks);
-        }
-    })();
+
+    philosophers.forEach(index => {
+        philosopherSemaphore(index, forks);
+    });
 }
 
-// Function to handle Semaphore logic
+// Hàm xử lý logic Semaphore
 async function philosopherSemaphore(index, forks) {
-    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
-        // Thinking
+    while (eatCount[index] < 1) { // Đặt số lần ăn tối đa cho mỗi triết gia
+        // Suy nghĩ
         contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
         await sleep(randomSleep());
 
         const leftFork = forks[index];
         const rightFork = forks[(index + 1) % forks.length];
 
-        // Try to acquire forks
-        await leftFork.acquire();
+        // Cầm đũa
         contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-        
-        await rightFork.acquire();
+        await leftFork.acquire(); // Cầm cái nĩa bên trái
+
+        await sleep(randomSleep()); // Thời gian tạm trước khi cầm đũa bên phải
         contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
-        await sleep(randomSleep());
+        await rightFork.acquire(); // Cầm cái nĩa bên phải
 
-        eatCount[index]++; // Increase the eat count
-        leftFork.release();
-        rightFork.release();
+        await sleep(randomSleep()); // Thời gian ăn
+        eatCount[index]++; // Tăng số lần ăn
 
-        // Put down forks
+        // Thả đũa
         contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
+        leftFork.release(); // Thả cái nĩa bên trái
         contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
+        rightFork.release(); // Thả cái nĩa bên phải
     }
-    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
+    checkAllPhilosophersDone(); // Kiểm tra xem tất cả triết gia đã ăn chưa
 }
 
-// Function to run Monitor algorithm
+// Hàm chạy thuật toán Monitor
 function runMonitor(num) {
     const forks = Array.from({ length: num }, () => new Monitor());
     philosophers = Array.from({ length: num }, (_, i) => i);
-    
-    // Start the philosophers in order
-    (async () => {
-        for (let index = 0; index < num; index++) {
-            await philosopherMonitor(index, forks);
-        }
-    })();
+
+    philosophers.forEach(index => {
+        philosopherMonitor(index, forks);
+    });
 }
 
-// Function to handle Monitor logic
+// Hàm xử lý logic Monitor
 async function philosopherMonitor(index, forks) {
-    while (eatCount[index] < 1) { // Change this to set how many times you want them to eat
-        // Thinking
+    while (eatCount[index] < 1) {
         contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
         await sleep(randomSleep());
 
         const monitor = forks[index];
 
-        await monitor.take();
+        // Cầm đũa
         contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-        
-        await monitor.take(); // simulate taking two forks
+        await monitor.take(); // Cầm cái nĩa bên trái
+        await monitor.take(); // Cầm cái nĩa bên phải
+
+        // Đang ăn
         contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
         await sleep(randomSleep());
 
-        eatCount[index]++; // Increase the eat count
-        monitor.put();
-        monitor.put(); // simulate putting back two forks
-        
-        // Put down forks
+        eatCount[index]++;
+        // Thả đũa
         contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
+        await monitor.put(); // Thả cái nĩa bên trái
         contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
+        await monitor.put(); // Thả cái nĩa bên phải
     }
-    checkAllPhilosophersDone(); // Check after each philosopher finishes eating
+    checkAllPhilosophersDone();
 }
 
-// Function to check if all philosophers are done eating
+// Kiểm tra xem tất cả triết gia đã ăn xong chưa
 function checkAllPhilosophersDone() {
-    if (eatCount.every(count => count >= 1)) { // Check if all philosophers have eaten
+    if (eatCount.every(count => count >= 1)) { // Kiểm tra xem tất cả đã ăn
         contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";
     }
 }
 
-// Helper function to simulate random sleep time
+// Hàm giúp tạo thời gian ngủ ngẫu nhiên
 function randomSleep() {
-    return Math.random() * 1000 + 500; // 500 to 1500 milliseconds
+    return Math.random() * 1000 + 500; // 500 đến 1500 mili giây
 }
 
-// Function to sleep asynchronously
+// Hàm ngủ không đồng bộ
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Semaphore class definition
+// Định nghĩa lớp Semaphore
 class Semaphore {
     constructor(value) {
         this.value = value;
@@ -148,7 +140,7 @@ class Semaphore {
     }
 }
 
-// Monitor class definition
+// Định nghĩa lớp Monitor
 class Monitor {
     constructor() {
         this.mutex = new Semaphore(1);
