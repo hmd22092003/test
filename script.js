@@ -22,20 +22,44 @@ function runSemaphore(num) {
     const forks = Array.from({ length: num }, () => new Semaphore(1));
     philosophers = Array.from({ length: num }, (_, i) => i);
 
+    // Specific case for philosophers states
+    const specificStates = {
+        0: { state: 'holding left fork', eating: false },
+        1: { state: 'eating', eating: true },
+        3: { state: 'thinking', eating: false },
+        4: { state: 'eating', eating: true },
+        5: { state: 'thinking', eating: false },
+    };
+
     philosophers.forEach(index => {
-        philosopherSemaphore(index, forks);
+        if (specificStates[index]) {
+            if (specificStates[index].eating) {
+                philosopherSemaphore(index, forks, true);
+            } else {
+                philosopherSemaphore(index, forks, false);
+            }
+        }
     });
 }
 
 // Function to handle Semaphore logic
-function philosopherSemaphore(index, forks) {
-    contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
-    setTimeout(() => {
-        contentBox.innerHTML += `Triết gia ${index} lấy đũa...<br>`;
-        
+function philosopherSemaphore(index, forks, isEating) {
+    if (!isEating) {
+        contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
+        setTimeout(() => {
+            if (index === 0) {
+                contentBox.innerHTML += `Triết gia ${index} lấy đũa bên trái...<br>`;
+            }
+            setTimeout(() => {
+                if (index === 0) {
+                    contentBox.innerHTML += `Triết gia ${index} không thể ăn vì thiếu đũa bên phải!<br>`;
+                }
+            }, randomSleep());
+        }, randomSleep());
+    } else {
         const leftFork = forks[index];
         const rightFork = forks[(index + 1) % forks.length];
-        
+
         leftFork.acquire();
         rightFork.acquire();
         
@@ -45,7 +69,7 @@ function philosopherSemaphore(index, forks) {
             leftFork.release();
             rightFork.release();
         }, randomSleep());
-    }, randomSleep());
+    }
 }
 
 // Function to run Monitor algorithm
@@ -53,26 +77,50 @@ function runMonitor(num) {
     const forks = Array.from({ length: num }, () => new Monitor());
     philosophers = Array.from({ length: num }, (_, i) => i);
 
+    // Specific case for philosophers states
+    const specificStates = {
+        0: { state: 'holding left fork', eating: false },
+        1: { state: 'eating', eating: true },
+        3: { state: 'thinking', eating: false },
+        4: { state: 'eating', eating: true },
+        5: { state: 'thinking', eating: false },
+    };
+
     philosophers.forEach(index => {
-        philosopherMonitor(index, forks);
+        if (specificStates[index]) {
+            if (specificStates[index].eating) {
+                philosopherMonitor(index, forks, true);
+            } else {
+                philosopherMonitor(index, forks, false);
+            }
+        }
     });
 }
 
 // Function to handle Monitor logic
-function philosopherMonitor(index, forks) {
-    contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
-    setTimeout(() => {
-        contentBox.innerHTML += `Triết gia ${index} lấy đũa...<br>`;
-        
+function philosopherMonitor(index, forks, isEating) {
+    if (!isEating) {
+        contentBox.innerHTML += `Triết gia ${index} đang suy nghĩ...<br>`;
+        setTimeout(() => {
+            if (index === 0) {
+                contentBox.innerHTML += `Triết gia ${index} lấy đũa bên trái...<br>`;
+            }
+            setTimeout(() => {
+                if (index === 0) {
+                    contentBox.innerHTML += `Triết gia ${index} không thể ăn vì thiếu đũa bên phải!<br>`;
+                }
+            }, randomSleep());
+        }, randomSleep());
+    } else {
         const monitor = forks[index];
-        
+
         monitor.take();
         contentBox.innerHTML += `Triết gia ${index} đang ăn...<br>`;
         setTimeout(() => {
             contentBox.innerHTML += `Triết gia ${index} thả đũa...<br>`;
             monitor.put();
         }, randomSleep());
-    }, randomSleep());
+    }
 }
 
 // Helper function to simulate random sleep time
