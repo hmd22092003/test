@@ -1,73 +1,90 @@
 class Semaphore {
-  constructor(count) {
-      this.count = count;
-      this.queue = [];
+  constructor(value) {
+      this.value = value;
+      this.waiting = [];
   }
 
   acquire() {
-      return new Promise((resolve) => {
-          const tryAcquire = () => {
-              if (this.count > 0) {
-                  this.count--;
-                  resolve();
-              } else {
-                  this.queue.push(tryAcquire);
-              }
-          };
-          tryAcquire();
-      });
+      if (this.value > 0) {
+          this.value--;
+          return Promise.resolve();
+      } else {
+          return new Promise((resolve) => {
+              this.waiting.push(resolve);
+          });
+      }
   }
 
   release() {
-      this.count++;
-      if (this.queue.length > 0) {
-          const next = this.queue.shift();
-          next();
+      this.value++;
+      if (this.waiting.length > 0) {
+          const resolve = this.waiting.shift();
+          resolve();
       }
   }
 }
 
-class Philosopher {
-  constructor(name, leftFork, rightFork) {
-      this.name = name;
-      this.leftFork = leftFork;
-      this.rightFork = rightFork;
-  }
+const N = 5; // Number of philosophers
+const forks = Array.from({ length: N }, () => new Semaphore(1));
 
-  async eat() {
-      await this.leftFork.acquire();
-      await this.rightFork.acquire();
+function updateContent(message) {
+  const contentBox = document.getElementById('contentBox');
+  contentBox.innerHTML += `<p>${message}</p>`;
+}
 
-      const resultBox = document.getElementById('resultBox');
-      resultBox.innerHTML += `<p>${this.name} is eating...</p>`;
-      await this.sleep(1000); // Simulate eating time
+async function philosopherSemaphore(index) {
+  while (true) {
+      updateContent(`Triết gia ${index} đang suy nghĩ...`);
+      await sleep(Math.floor(Math.random() * 2000) + 1000); // Suy nghĩ
 
-      this.rightFork.release();
-      this.leftFork.release();
+      await forks[index].acquire(); // Cầm cái nĩa bên trái
+      await forks[(index + 1) % N].acquire(); // Cầm cái nĩa bên phải
 
-      resultBox.innerHTML += `<p>${this.name} has finished eating.</p>`;
-  }
+      updateContent(`Triết gia ${index} đang ăn...`);
+      await sleep(Math.floor(Math.random() * 2000) + 1000); // Ăn
 
-  sleep(ms) {
-      return new Promise((resolve) => setTimeout(resolve, ms));
+      updateContent(`Triết gia ${index} đã ăn xong.`);
+      forks[index].release(); // Thả cái nĩa bên trái
+      forks[(index + 1) % N].release(); // Thả cái nĩa bên phải
   }
 }
 
-const forkCount = 5;
-const forks = Array.from({ length: forkCount }, () => new Semaphore(1));
-const philosophers = Array.from({ length: forkCount }, (_, i) => {
-  const leftFork = forks[i];
-  const rightFork = forks[(i + 1) % forkCount];
-  return new Philosopher(`Philosopher ${i + 1}`, leftFork, rightFork);
-});
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-async function dine() {
-  const resultBox = document.getElementById('resultBox');
-  resultBox.innerHTML = ''; // Clear previous results
-  const dinePromises = philosophers.map(philosopher => philosopher.eat());
-  await Promise.all(dinePromises);
+async function philosopherMonitor(index) {
+  while (true) {
+      updateContent(`Triết gia ${index} đang suy nghĩ...`);
+      await sleep(Math.floor(Math.random() * 2000) + 1000); // Suy nghĩ
+
+      await forks[index].acquire(); // Cầm cái nĩa bên trái
+      await forks[(index + 1) % N].acquire(); // Cầm cái nĩa bên phải
+
+      updateContent(`Triết gia ${index} đang ăn...`);
+      await sleep(Math.floor(Math.random() * 2000) + 1000); // Ăn
+
+      updateContent(`Triết gia ${index} đã ăn xong.`);
+      forks[index].release(); // Thả cái nĩa bên trái
+      forks[(index + 1) % N].release(); // Thả cái nĩa bên phải
+  }
 }
 
 document.getElementById('runButton').addEventListener('click', () => {
-  dine();
+  const selectedAlgorithm = document.getElementById('optionSelect').value;
+
+  // Clear the content box before starting
+  const contentBox = document.getElementById('contentBox');
+  contentBox.innerHTML = "Kết quả sẽ hiển thị ở đây...";
+
+  // Run the selected algorithm
+  if (selectedAlgorithm === "Monitor") {
+      for (let i = 0; i < N; i++) {
+          philosopherMonitor(i);
+      }
+  } else if (selectedAlgorithm === "Semaphore") {
+      for (let i = 0; i < N; i++) {
+          philosopherSemaphore(i);
+      }
+  }
 });
