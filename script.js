@@ -1,94 +1,147 @@
-class DiningPhilosophers {
-    constructor(numPhilosophers) {
-        this.numPhilosophers = numPhilosophers;  // Số lượng triết gia
-        this.states = new Array(numPhilosophers).fill('THINKING');  // Trạng thái của triết gia
-        this.self = new Array(numPhilosophers).fill(null).map(() => new Condition());  // Điều kiện của mỗi triết gia
-    }
+// Chọn các phần tử DOM
+const runButton = document.getElementById('runButton');
+const optionSelect = document.getElementById('optionSelect');
+const numPhilosophersInput = document.getElementById('numPhilosophers');
+const contentBox = document.getElementById('contentBox');
 
-    // Hàm lấy đũa (pickup)
-    async pickup(i) {
-        this.states[i] = 'HUNGRY';
-        this.test(i);
-        if (this.states[i] !== 'EATING') {
-            await this.self[i].wait();  // Chờ nếu không thể ăn
-        }
-    }
+// Khai báo các biến toàn cục
+let philosophers = [];
+let numPhilosophers = 5; // Giá trị mặc định
 
-    // Hàm bỏ đũa (putdown)
-    putdown(i) {
-        this.states[i] = 'THINKING';
-        this.test((i + this.numPhilosophers - 1) % this.numPhilosophers);  // Kiểm tra triết gia bên trái
-        this.test((i + 1) % this.numPhilosophers);  // Kiểm tra triết gia bên phải
-    }
-
-    // Hàm kiểm tra trạng thái (test)
-    test(i) {
-        if (this.states[(i + this.numPhilosophers - 1) % this.numPhilosophers] !== 'EATING' && 
-            this.states[i] === 'HUNGRY' && 
-            this.states[(i + 1) % this.numPhilosophers] !== 'EATING') {
-            this.states[i] = 'EATING';
-            this.self[i].signal();  // Cho phép triết gia ăn
-            contentBox.innerHTML += `Triết gia số ${i}: đã có đủ hai chiếc đũa và đang ăn...<br>`; // In ra kết quả
-        }
-    }
-
-    // Khởi tạo trạng thái của tất cả triết gia
-    initialize() {
-        for (let i = 0; i < this.numPhilosophers; i++) {
-            this.states[i] = 'THINKING';  // Tất cả triết gia bắt đầu trong trạng thái "THINKING"
-        }
-    }
+// Hàm để hiển thị kết quả
+function displayResult(message) {
+    contentBox.innerHTML += message + "<br>";
+    contentBox.scrollTop = contentBox.scrollHeight; // Cuộn xuống cùng
 }
 
-// Lớp mô phỏng điều kiện (Condition)
-class Condition {
-    constructor() {
-        this.queue = [];  // Hàng đợi cho triết gia chờ
-    }
+// Hàm cho Semaphore
+function semaphore() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
 
-    wait() {
-        return new Promise((resolve) => {
-            this.queue.push(resolve);  // Đẩy hàm resolve vào hàng đợi
-        });
-    }
+    function philosopher(id) {
+        while (true) {
+            // Suy nghĩ
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            sleep(1000); // Thời gian suy nghĩ
 
-    signal() {
-        if (this.queue.length > 0) {
-            const resolve = this.queue.shift();  // Lấy hàm resolve đầu tiên trong hàng đợi
-            resolve();  // Gọi hàm resolve để cho phép triết gia tiếp tục
+            // Lấy đũa
+            semaphore.wait();
+            chopsticks[id] = true;
+            chopsticks[(id + 1) % numPhilosophers] = true;
+            displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+
+            // Ăn
+            sleep(1000); // Thời gian ăn
+
+            // Thả đũa
+            chopsticks[id] = false;
+            chopsticks[(id + 1) % numPhilosophers] = false;
+            displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+            semaphore.signal();
         }
     }
-}
 
-// Hàm mô phỏng triết gia ăn
-async function simulateDiningPhilosophers() {
-    const numPhilosophers = parseInt(document.getElementById('numPhilosophers').value);  // Lấy số lượng triết gia từ input
-    const dp = new DiningPhilosophers(numPhilosophers);  // Tạo đối tượng DiningPhilosophers
-    dp.initialize();  // Khởi tạo trạng thái cho tất cả triết gia
-
+    // Khởi động triết gia
     for (let i = 0; i < numPhilosophers; i++) {
-        await dp.pickup(i);  // Triết gia lấy đũa
-        contentBox.innerHTML += `Triết gia số ${i}: đang ăn...<br>`;  // In ra kết quả khi triết gia bắt đầu ăn
-        await sleep(randomSleep());  // Giả lập thời gian ăn
-        dp.putdown(i);  // Triết gia thả đũa
-        contentBox.innerHTML += `Triết gia số ${i}: đã thả đũa.<br>`;  // In ra kết quả khi triết gia thả đũa
+        philosophers[i] = philosopher(i);
     }
-
-    contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";  // In ra thông báo khi tất cả đã ăn xong
 }
 
-// Hàm ngủ không đồng bộ
+// Hàm cho Monitor
+function monitor() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const monitor = new Monitor();
+
+    function philosopher(id) {
+        while (true) {
+            // Suy nghĩ
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            sleep(1000); // Thời gian suy nghĩ
+
+            monitor.enter();
+            // Lấy đũa
+            chopsticks[id] = true;
+            chopsticks[(id + 1) % numPhilosophers] = true;
+            displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+
+            // Ăn
+            sleep(1000); // Thời gian ăn
+
+            // Thả đũa
+            chopsticks[id] = false;
+            chopsticks[(id + 1) % numPhilosophers] = false;
+            displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+            monitor.leave();
+        }
+    }
+
+    // Khởi động triết gia
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
+    }
+}
+
+// Hàm tạm dừng (sleep)
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Hàm tạo thời gian ngủ ngẫu nhiên
-function randomSleep() {
-    return Math.random() * 1000 + 500;  // 500 đến 1500 mili giây
+// Khai báo Semaphore
+class Semaphore {
+    constructor(count) {
+        this.count = count;
+        this.queue = [];
+    }
+
+    async wait() {
+        if (this.count <= 0) {
+            await new Promise(resolve => this.queue.push(resolve));
+        }
+        this.count--;
+    }
+
+    signal() {
+        this.count++;
+        if (this.queue.length > 0) {
+            const resolve = this.queue.shift();
+            resolve();
+        }
+    }
 }
 
-// Lắng nghe sự kiện click trên nút "Run"
-document.getElementById('runButton').addEventListener('click', () => {
-    contentBox.innerHTML = '';  // Xóa kết quả trước đó
-    simulateDiningPhilosophers();  // Bắt đầu mô phỏng
+// Khai báo Monitor
+class Monitor {
+    constructor() {
+        this.lock = false;
+        this.queue = [];
+    }
+
+    async enter() {
+        while (this.lock) {
+            await new Promise(resolve => this.queue.push(resolve));
+        }
+        this.lock = true;
+    }
+
+    leave() {
+        this.lock = false;
+        if (this.queue.length > 0) {
+            const resolve = this.queue.shift();
+            resolve();
+        }
+    }
+}
+
+// Sự kiện click cho nút "Run"
+runButton.addEventListener('click', () => {
+    contentBox.innerHTML = ""; // Xóa nội dung cũ
+    numPhilosophers = parseInt(numPhilosophersInput.value);
+    const selectedOption = optionSelect.value;
+
+    if (selectedOption === "Semaphore") {
+        semaphore();
+    } else if (selectedOption === "Monitor") {
+        monitor();
+    }
 });
