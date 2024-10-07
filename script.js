@@ -7,6 +7,7 @@ const contentBox = document.getElementById('contentBox');
 // Khai báo các biến toàn cục
 let philosophers = [];
 let numPhilosophers = 5; // Giá trị mặc định
+let maxEats = 1; // Giới hạn số lần ăn tối đa cho mỗi triết gia
 
 // Hàm để hiển thị kết quả
 function displayResult(message) {
@@ -20,7 +21,9 @@ async function semaphore() {
     const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
 
     async function philosopher(id) {
-        while (true) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
             // Suy nghĩ
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
             await sleep(1000); // Thời gian suy nghĩ
@@ -39,7 +42,10 @@ async function semaphore() {
             chopsticks[(id + 1) % numPhilosophers] = false;
             displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
             semaphore.signal();
+            eats++; // Tăng số lần ăn
         }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
 
     // Khởi động triết gia
@@ -54,7 +60,9 @@ async function monitor() {
     const monitor = new Monitor();
 
     async function philosopher(id) {
-        while (true) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
             // Suy nghĩ
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
             await sleep(1000); // Thời gian suy nghĩ
@@ -73,7 +81,10 @@ async function monitor() {
             chopsticks[(id + 1) % numPhilosophers] = false;
             displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
             monitor.leave();
+            eats++; // Tăng số lần ăn
         }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
 
     // Khởi động triết gia
