@@ -101,6 +101,7 @@ async function semaphore() {
             semaphore.signal(); // Giải phóng semaphore
         }
 
+        // Thông báo khi triết gia ra về
         displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
 
@@ -143,6 +144,7 @@ async function monitor() {
             monitor.leave(); // Giải phóng monitor
         }
 
+        // Thông báo khi triết gia ra về
         displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
 
@@ -151,7 +153,6 @@ async function monitor() {
         philosophers[i] = philosopher(i);
     }
 }
-
 // Sự kiện click cho nút "Run"
 runButton.addEventListener('click', () => {
     contentBox.innerHTML = ""; // Xóa nội dung cũ
