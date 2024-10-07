@@ -16,6 +16,7 @@ function displayResult(message) {
 }
 
 // Hàm cho Semaphore
+// Khai báo hàm cho Semaphore
 async function semaphore() {
     const chopsticks = new Array(numPhilosophers).fill(false);
     const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
@@ -30,19 +31,24 @@ async function semaphore() {
 
             // Lấy đũa
             await semaphore.wait();
-            chopsticks[id] = true;
-            chopsticks[(id + 1) % numPhilosophers] = true;
-            displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
 
-            // Ăn
-            await sleep(1000); // Thời gian ăn
+            // Kiểm tra xem có đủ đũa để ăn không
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
 
-            // Thả đũa
-            chopsticks[id] = false;
-            chopsticks[(id + 1) % numPhilosophers] = false;
-            displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
-            semaphore.signal();
-            eats++; // Tăng số lần ăn
+                // Ăn
+                await sleep(1000); // Thời gian ăn
+
+                // Thả đũa
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+
+            semaphore.signal(); // Giải phóng semaphore
         }
 
         displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
