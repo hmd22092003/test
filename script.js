@@ -15,7 +15,6 @@ function displayResult(message) {
     contentBox.scrollTop = contentBox.scrollHeight; // Cuộn xuống cùng
 }
 
-// Hàm cho Semaphore
 // Khai báo hàm cho Semaphore
 async function semaphore() {
     const chopsticks = new Array(numPhilosophers).fill(false);
@@ -29,11 +28,11 @@ async function semaphore() {
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
             await sleep(1000); // Thời gian suy nghĩ
 
-            // Lấy đũa
-            await semaphore.wait();
+            await semaphore.wait(); // Chờ đến lượt
 
-            // Kiểm tra xem có đủ đũa để ăn không
+            // Kiểm tra xem cả hai chiếc đũa có sẵn không
             if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                // Lấy đũa
                 chopsticks[id] = true;
                 chopsticks[(id + 1) % numPhilosophers] = true;
                 displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
@@ -59,6 +58,7 @@ async function semaphore() {
         philosophers[i] = philosopher(i);
     }
 }
+
 
 // Hàm cho Monitor
 async function monitor() {
