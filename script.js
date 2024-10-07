@@ -15,90 +15,6 @@ function displayResult(message) {
     contentBox.scrollTop = contentBox.scrollHeight; // Cuộn xuống cùng
 }
 
-// Khai báo hàm cho Semaphore
-async function semaphore() {
-    const chopsticks = new Array(numPhilosophers).fill(false);
-    const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
-
-    async function philosopher(id) {
-        let eats = 0; // Đếm số lần ăn
-
-        while (eats < maxEats) {
-            // Suy nghĩ
-            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
-            await sleep(1000); // Thời gian suy nghĩ
-
-            await semaphore.wait(); // Chờ đến lượt
-
-            // Kiểm tra xem cả hai chiếc đũa có sẵn không
-            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
-                // Lấy đũa
-                chopsticks[id] = true;
-                chopsticks[(id + 1) % numPhilosophers] = true;
-                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
-
-                // Ăn
-                await sleep(1000); // Thời gian ăn
-
-                // Thả đũa
-                chopsticks[id] = false;
-                chopsticks[(id + 1) % numPhilosophers] = false;
-                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
-                eats++; // Tăng số lần ăn
-            }
-
-            semaphore.signal(); // Giải phóng semaphore
-        }
-
-        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
-    }
-
-    // Khởi động triết gia
-    for (let i = 0; i < numPhilosophers; i++) {
-        philosophers[i] = philosopher(i);
-    }
-}
-
-
-// Hàm cho Monitor
-async function monitor() {
-    const chopsticks = new Array(numPhilosophers).fill(false);
-    const monitor = new Monitor();
-
-    async function philosopher(id) {
-        let eats = 0; // Đếm số lần ăn
-
-        while (eats < maxEats) {
-            // Suy nghĩ
-            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
-            await sleep(1000); // Thời gian suy nghĩ
-
-            await monitor.enter();
-            // Lấy đũa
-            chopsticks[id] = true;
-            chopsticks[(id + 1) % numPhilosophers] = true;
-            displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
-
-            // Ăn
-            await sleep(1000); // Thời gian ăn
-
-            // Thả đũa
-            chopsticks[id] = false;
-            chopsticks[(id + 1) % numPhilosophers] = false;
-            displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
-            monitor.leave();
-            eats++; // Tăng số lần ăn
-        }
-
-        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
-    }
-
-    // Khởi động triết gia
-    for (let i = 0; i < numPhilosophers; i++) {
-        philosophers[i] = philosopher(i);
-    }
-}
-
 // Hàm tạm dừng (sleep)
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -147,6 +63,92 @@ class Monitor {
             const resolve = this.queue.shift();
             resolve();
         }
+    }
+}
+
+// Hàm cho Semaphore
+async function semaphore() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
+
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
+            // Suy nghĩ
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            await sleep(1000); // Thời gian suy nghĩ
+
+            await semaphore.wait(); // Chờ đến lượt
+
+            // Kiểm tra xem cả hai chiếc đũa có sẵn không
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                // Lấy đũa
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+
+                // Ăn
+                await sleep(1000); // Thời gian ăn
+
+                // Thả đũa
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+
+            semaphore.signal(); // Giải phóng semaphore
+        }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
+    }
+
+    // Khởi động triết gia
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
+    }
+}
+
+// Hàm cho Monitor
+async function monitor() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const monitor = new Monitor();
+
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
+            // Suy nghĩ
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            await sleep(1000); // Thời gian suy nghĩ
+
+            await monitor.enter();
+            // Kiểm tra xem cả hai chiếc đũa có sẵn không
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                // Lấy đũa
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+
+                // Ăn
+                await sleep(1000); // Thời gian ăn
+
+                // Thả đũa
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+            monitor.leave(); // Giải phóng monitor
+        }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
+    }
+
+    // Khởi động triết gia
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
     }
 }
 
