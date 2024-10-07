@@ -15,24 +15,24 @@ function displayResult(message) {
 }
 
 // Hàm cho Semaphore
-function semaphore() {
+async function semaphore() {
     const chopsticks = new Array(numPhilosophers).fill(false);
     const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
 
-    function philosopher(id) {
+    async function philosopher(id) {
         while (true) {
             // Suy nghĩ
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
-            sleep(1000); // Thời gian suy nghĩ
+            await sleep(1000); // Thời gian suy nghĩ
 
             // Lấy đũa
-            semaphore.wait();
+            await semaphore.wait();
             chopsticks[id] = true;
             chopsticks[(id + 1) % numPhilosophers] = true;
             displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
 
             // Ăn
-            sleep(1000); // Thời gian ăn
+            await sleep(1000); // Thời gian ăn
 
             // Thả đũa
             chopsticks[id] = false;
@@ -49,24 +49,24 @@ function semaphore() {
 }
 
 // Hàm cho Monitor
-function monitor() {
+async function monitor() {
     const chopsticks = new Array(numPhilosophers).fill(false);
     const monitor = new Monitor();
 
-    function philosopher(id) {
+    async function philosopher(id) {
         while (true) {
             // Suy nghĩ
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
-            sleep(1000); // Thời gian suy nghĩ
+            await sleep(1000); // Thời gian suy nghĩ
 
-            monitor.enter();
+            await monitor.enter();
             // Lấy đũa
             chopsticks[id] = true;
             chopsticks[(id + 1) % numPhilosophers] = true;
             displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
 
             // Ăn
-            sleep(1000); // Thời gian ăn
+            await sleep(1000); // Thời gian ăn
 
             // Thả đũa
             chopsticks[id] = false;
