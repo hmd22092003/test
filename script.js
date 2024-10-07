@@ -1,110 +1,80 @@
-let philosophers = [];
-let contentBox = document.getElementById('contentBox');
-let numPhilosophersInput = document.getElementById('numPhilosophers');
-let eatCount = []; // Đếm số lần mỗi triết gia ăn
-
-document.getElementById('runButton').addEventListener('click', function() {
-    const numPhilosophers = parseInt(numPhilosophersInput.value);
-    const selectedAlgorithm = document.getElementById('optionSelect').value;
-
-    contentBox.innerHTML = ''; // Xóa kết quả trước đó
-
-    eatCount = Array(numPhilosophers).fill(0); // Khởi tạo số lần ăn
-
-    if (selectedAlgorithm === "Semaphore") {
-        runSemaphore(numPhilosophers);
-    } else if (selectedAlgorithm === "Monitor") {
-        runMonitor(numPhilosophers);
+class DiningPhilosophers {
+    constructor(numPhilosophers) {
+        this.numPhilosophers = numPhilosophers;  // Số lượng triết gia
+        this.states = new Array(numPhilosophers).fill('THINKING');  // Trạng thái của triết gia
+        this.self = new Array(numPhilosophers).fill(null).map(() => new Condition());  // Điều kiện của mỗi triết gia
     }
-});
 
-// Hàm chạy thuật toán Semaphore
-function runSemaphore(num) {
-    const forks = Array.from({ length: num }, () => new Semaphore(1));
-    philosophers = Array.from({ length: num }, (_, i) => i);
-
-    philosophers.forEach(index => {
-        philosopherSemaphore(index, forks);
-    });
-}
-
-// Hàm xử lý logic Semaphore
-async function philosopherSemaphore(index, forks) {
-    while (eatCount[index] < 1) { // Đặt số lần ăn tối đa cho mỗi triết gia
-        // Suy nghĩ
-        contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
-        await sleep(randomSleep());
-
-        const leftFork = forks[index];
-        const rightFork = forks[(index + 1) % forks.length];
-
-        // Cầm đũa
-        contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-        await leftFork.acquire(); // Cầm cái nĩa bên trái
-
-        await sleep(randomSleep()); // Thời gian tạm trước khi cầm đũa bên phải
-        contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
-        await rightFork.acquire(); // Cầm cái nĩa bên phải
-
-        await sleep(randomSleep()); // Thời gian ăn
-        eatCount[index]++; // Tăng số lần ăn
-
-        // Thả đũa
-        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
-        leftFork.release(); // Thả cái nĩa bên trái
-        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
-        rightFork.release(); // Thả cái nĩa bên phải
+    // Hàm lấy đũa (pickup)
+    async pickup(i) {
+        this.states[i] = 'HUNGRY';
+        this.test(i);
+        if (this.states[i] !== 'EATING') {
+            await this.self[i].wait();  // Chờ nếu không thể ăn
+        }
     }
-    checkAllPhilosophersDone(); // Kiểm tra xem tất cả triết gia đã ăn chưa
-}
 
-// Hàm chạy thuật toán Monitor
-function runMonitor(num) {
-    const forks = Array.from({ length: num }, () => new Monitor());
-    philosophers = Array.from({ length: num }, (_, i) => i);
-
-    philosophers.forEach(index => {
-        philosopherMonitor(index, forks);
-    });
-}
-
-// Hàm xử lý logic Monitor
-async function philosopherMonitor(index, forks) {
-    while (eatCount[index] < 1) {
-        contentBox.innerHTML += `Triết gia số ${index}: đang suy nghĩ...<br>`;
-        await sleep(randomSleep());
-
-        const monitor = forks[index];
-
-        // Cầm đũa
-        contentBox.innerHTML += `Triết gia số ${index}: đang giữ một chiếc đũa bên trái mình.<br>`;
-        await monitor.take(); // Cầm cái nĩa bên trái
-        await monitor.take(); // Cầm cái nĩa bên phải
-
-        // Đang ăn
-        contentBox.innerHTML += `Triết gia số ${index}: đã có đủ hai chiếc đũa và đang ăn...<br>`;
-        await sleep(randomSleep());
-
-        eatCount[index]++;
-        // Thả đũa
-        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên trái.<br>`;
-        await monitor.put(); // Thả cái nĩa bên trái
-        contentBox.innerHTML += `Triết gia số ${index}: đã thả đũa bên phải.<br>`;
-        await monitor.put(); // Thả cái nĩa bên phải
+    // Hàm bỏ đũa (putdown)
+    putdown(i) {
+        this.states[i] = 'THINKING';
+        this.test((i + this.numPhilosophers - 1) % this.numPhilosophers);  // Kiểm tra triết gia bên trái
+        this.test((i + 1) % this.numPhilosophers);  // Kiểm tra triết gia bên phải
     }
-    checkAllPhilosophersDone();
-}
 
-// Kiểm tra xem tất cả triết gia đã ăn xong chưa
-function checkAllPhilosophersDone() {
-    if (eatCount.every(count => count >= 1)) { // Kiểm tra xem tất cả đã ăn
-        contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";
+    // Hàm kiểm tra trạng thái (test)
+    test(i) {
+        if (this.states[(i + this.numPhilosophers - 1) % this.numPhilosophers] !== 'EATING' && 
+            this.states[i] === 'HUNGRY' && 
+            this.states[(i + 1) % this.numPhilosophers] !== 'EATING') {
+            this.states[i] = 'EATING';
+            this.self[i].signal();  // Cho phép triết gia ăn
+            contentBox.innerHTML += `Triết gia số ${i}: đã có đủ hai chiếc đũa và đang ăn...<br>`; // In ra kết quả
+        }
+    }
+
+    // Khởi tạo trạng thái của tất cả triết gia
+    initialize() {
+        for (let i = 0; i < this.numPhilosophers; i++) {
+            this.states[i] = 'THINKING';  // Tất cả triết gia bắt đầu trong trạng thái "THINKING"
+        }
     }
 }
 
-// Hàm giúp tạo thời gian ngủ ngẫu nhiên
-function randomSleep() {
-    return Math.random() * 1000 + 500; // 500 đến 1500 mili giây
+// Lớp mô phỏng điều kiện (Condition)
+class Condition {
+    constructor() {
+        this.queue = [];  // Hàng đợi cho triết gia chờ
+    }
+
+    wait() {
+        return new Promise((resolve) => {
+            this.queue.push(resolve);  // Đẩy hàm resolve vào hàng đợi
+        });
+    }
+
+    signal() {
+        if (this.queue.length > 0) {
+            const resolve = this.queue.shift();  // Lấy hàm resolve đầu tiên trong hàng đợi
+            resolve();  // Gọi hàm resolve để cho phép triết gia tiếp tục
+        }
+    }
+}
+
+// Hàm mô phỏng triết gia ăn
+async function simulateDiningPhilosophers() {
+    const numPhilosophers = parseInt(document.getElementById('numPhilosophers').value);  // Lấy số lượng triết gia từ input
+    const dp = new DiningPhilosophers(numPhilosophers);  // Tạo đối tượng DiningPhilosophers
+    dp.initialize();  // Khởi tạo trạng thái cho tất cả triết gia
+
+    for (let i = 0; i < numPhilosophers; i++) {
+        await dp.pickup(i);  // Triết gia lấy đũa
+        contentBox.innerHTML += `Triết gia số ${i}: đang ăn...<br>`;  // In ra kết quả khi triết gia bắt đầu ăn
+        await sleep(randomSleep());  // Giả lập thời gian ăn
+        dp.putdown(i);  // Triết gia thả đũa
+        contentBox.innerHTML += `Triết gia số ${i}: đã thả đũa.<br>`;  // In ra kết quả khi triết gia thả đũa
+    }
+
+    contentBox.innerHTML += "Tất cả triết gia đã ăn xong!<br>";  // In ra thông báo khi tất cả đã ăn xong
 }
 
 // Hàm ngủ không đồng bộ
@@ -112,50 +82,13 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Định nghĩa lớp Semaphore
-class Semaphore {
-    constructor(value) {
-        this.value = value;
-        this.waitQueue = [];
-    }
-
-    acquire() {
-        return new Promise((resolve) => {
-            if (this.value > 0) {
-                this.value--;
-                resolve();
-            } else {
-                this.waitQueue.push(resolve);
-            }
-        });
-    }
-
-    release() {
-        if (this.waitQueue.length > 0) {
-            const resolve = this.waitQueue.shift();
-            resolve();
-        } else {
-            this.value++;
-        }
-    }
+// Hàm tạo thời gian ngủ ngẫu nhiên
+function randomSleep() {
+    return Math.random() * 1000 + 500;  // 500 đến 1500 mili giây
 }
 
-// Định nghĩa lớp Monitor
-class Monitor {
-    constructor() {
-        this.mutex = new Semaphore(1);
-        this.waiting = 0;
-    }
-
-    async take() {
-        await this.mutex.acquire();
-        this.waiting++;
-        this.mutex.release();
-    }
-
-    async put() {
-        await this.mutex.acquire();
-        this.waiting--;
-        this.mutex.release();
-    }
-}
+// Lắng nghe sự kiện click trên nút "Run"
+document.getElementById('runButton').addEventListener('click', () => {
+    contentBox.innerHTML = '';  // Xóa kết quả trước đó
+    simulateDiningPhilosophers();  // Bắt đầu mô phỏng
+});
