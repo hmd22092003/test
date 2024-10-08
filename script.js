@@ -8,6 +8,7 @@ const contentBox = document.getElementById('contentBox');
 let philosophers = [];
 let numPhilosophers = 5; // Giá trị mặc định
 let maxEats = 1; // Giới hạn số lần ăn tối đa cho mỗi triết gia
+let maxItems = 10; // Giới hạn số sản phẩm tối đa cho Producer-Consumer
 
 // Hàm để hiển thị kết quả
 function displayResult(message) {
@@ -144,20 +145,22 @@ async function semaphoreProducerConsumer() {
     const bufferSize = 5; // Kích thước của buffer
     const semaphoreEmpty = new Semaphore(bufferSize); // Chờ có chỗ trống
     const semaphoreFull = new Semaphore(0); // Chờ có sản phẩm
+    let totalProduced = 0; // Biến đếm tổng sản phẩm đã sản xuất
 
     async function producer(id) {
-        while (true) {
-            const item = `Sản phẩm ${id}`; // Tạo sản phẩm
+        while (totalProduced < maxItems) { // Điều kiện dừng sản xuất
+            const item = `Sản phẩm ${totalProduced}`; // Tạo sản phẩm
             await semaphoreEmpty.wait(); // Chờ có chỗ trống trong buffer
             buffer.push(item); // Thêm sản phẩm vào buffer
             displayResult(`Producer ${id}: đã thêm ${item} vào buffer`);
             semaphoreFull.signal(); // Tín hiệu cho consumer
+            totalProduced++; // Tăng số sản phẩm đã sản xuất
             await sleep(1000); // Giả lập thời gian sản xuất
         }
     }
 
     async function consumer(id) {
-        while (true) {
+        while (totalProduced > 0) { // Điều kiện dừng tiêu thụ
             await semaphoreFull.wait(); // Chờ có sản phẩm trong buffer
             const item = buffer.shift(); // Lấy sản phẩm từ buffer
             displayResult(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
@@ -177,14 +180,16 @@ async function monitorProducerConsumer() {
     const buffer = [];
     const bufferSize = 5; // Kích thước của buffer
     const monitorLock = new Monitor();
+    let totalProduced = 0; // Biến đếm tổng sản phẩm đã sản xuất
 
     async function producer(id) {
-        while (true) {
-            const item = `Sản phẩm ${id}`; // Tạo sản phẩm
+        while (totalProduced < maxItems) { // Điều kiện dừng sản xuất
+            const item = `Sản phẩm ${totalProduced}`; // Tạo sản phẩm
             await monitorLock.enter(); // Nhập vào monitor
             if (buffer.length < bufferSize) {
                 buffer.push(item); // Thêm sản phẩm vào buffer
                 displayResult(`Producer ${id}: đã thêm ${item} vào buffer`);
+                totalProduced++; // Tăng số sản phẩm đã sản xuất
             }
             monitorLock.leave(); // Rời khỏi monitor
             await sleep(1000); // Giả lập thời gian sản xuất
@@ -192,7 +197,7 @@ async function monitorProducerConsumer() {
     }
 
     async function consumer(id) {
-        while (true) {
+        while (totalProduced > 0) { // Điều kiện dừng tiêu thụ
             await monitorLock.enter(); // Nhập vào monitor
             if (buffer.length > 0) {
                 const item = buffer.shift(); // Lấy sản phẩm từ buffer
@@ -222,11 +227,14 @@ runButton.addEventListener('click', async () => {
         case 'Philosophers - Monitor':
             await monitorPhilosophers();
             break;
-        case 'Producer - Semaphore':
+        case 'Producer-Consumer - Semaphore':
             await semaphoreProducerConsumer();
             break;
-        case 'Producer - Monitor':
+        case 'Producer-Consumer - Monitor':
             await monitorProducerConsumer();
             break;
+        default:
+            displayResult('Chưa chọn phương pháp nào.');
+            break;
     }
-})
+});
