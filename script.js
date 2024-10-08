@@ -227,10 +227,10 @@ runButton.addEventListener('click', async () => {
         case 'Philosophers - Monitor':
             await monitorPhilosophers();
             break;
-        case 'Producer-Consumer - Semaphore':
+        case 'Producer - Semaphore':
             await semaphoreProducerConsumer();
             break;
-        case 'Producer-Consumer - Monitor':
+        case 'Producer - Monitor':
             await monitorProducerConsumer();
             break;
         default:
