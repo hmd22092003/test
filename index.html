@@ -18,6 +18,7 @@
   <header class="bg-primary text-white text-center py-4">
     <h1>Jamstack & Synchronous</h1>
   </header>
+
   <!-- Main Content -->
   <div class="container my-5">
     <div class="row">
@@ -28,7 +29,7 @@
 
       <!-- Right Side - Buttons and Display Box -->
       <div class="col-md-6">
-        <!-- Row 1: Button và Combobox Semaphore/Monitor -->
+        <!-- Row 1: Button and Algorithm Select -->
         <div class="row mb-3 d-flex align-items-center">
           <div class="col-6 d-flex justify-content-start">
             <button id="runButton" class="btn btn-primary btn-lg">
@@ -43,8 +44,8 @@
           </div>
         </div>
 
-        <!-- Row 2: Combobox cho Producer-Consumer và Reader-Writer -->
-        <div class="row mb-3 d-flex align-items-center">
+        <!-- Row 2: Problem Select -->
+        <div class="row mb-3">
           <div class="col-12">
             <select id="problemSelect" class="form-select form-select-lg">
               <option value="DiningPhilosophers">Triết gia</option>
@@ -54,15 +55,14 @@
           </div>
         </div>
 
-
-        <!-- Input Box cho vấn đề tuỳ chỉnh -->
+        <!-- Input Box for Custom Problem -->
         <div class="mb-3">
           <label for="numPhilosophers" class="form-label">Nhập số triết gia:</label>
           <input type="number" id="numPhilosophers" class="form-control" value="5" min="1">
         </div>
 
         <!-- Row 3: Display Box -->
-        <div id="contentBox" class="content-box p-3 w-100 border border-dark" style="width: 500px;height: 600px;border-radius: 5px; overflow-y: auto;">
+        <div id="contentBox" class="content-box p-3 w-100 border border-dark" style="height: 600px; border-radius: 5px; overflow-y: auto;">
           Kết quả sẽ hiển thị ở đây...
         </div>
       </div>
