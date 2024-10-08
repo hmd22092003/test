@@ -144,20 +144,16 @@ async function semaphoreProducerConsumer() {
     const bufferSize = 5; // Kích thước của buffer
     const semaphoreEmpty = new Semaphore(bufferSize); // Chờ có chỗ trống
     const semaphoreFull = new Semaphore(0); // Chờ có sản phẩm
-    let totalProduced = 0; // Biến đếm tổng sản phẩm đã sản xuất
     const maxItems = 10; // Giới hạn tổng số sản phẩm được sản xuất
 
     async function producer(id) {
-        while (totalProduced < maxItems) { // Điều kiện dừng sản xuất
-            const item = `Sản phẩm ${totalProduced}`; // Tạo sản phẩm
+        for (let i = 0; i < maxItems; i++) {
             await semaphoreEmpty.wait(); // Chờ có chỗ trống trong buffer
             
-            // Bảo vệ quyền truy cập vào biến tổng sản phẩm
-            const tempTotalProduced = totalProduced; // Lưu trữ giá trị hiện tại
-            totalProduced++; // Tăng số sản phẩm đã sản xuất
-            
+            const item = `Sản phẩm ${i}`; // Tạo sản phẩm
             buffer.push(item); // Thêm sản phẩm vào buffer
-            displayResult(`Producer ${id}: đã thêm ${item} vào buffer`);
+            console.log(`Producer ${id}: đã thêm ${item} vào buffer`);
+
             semaphoreFull.signal(); // Tín hiệu cho consumer
             
             await sleep(1000); // Giả lập thời gian sản xuất
@@ -165,21 +161,23 @@ async function semaphoreProducerConsumer() {
     }
 
     async function consumer(id) {
-        while (totalProduced > 0 || semaphoreFull.count > 0) { // Điều kiện dừng tiêu thụ
+        for (let i = 0; i < maxItems; i++) {
             await semaphoreFull.wait(); // Chờ có sản phẩm trong buffer
             const item = buffer.shift(); // Lấy sản phẩm từ buffer
-            displayResult(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
+            console.log(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
             semaphoreEmpty.signal(); // Tín hiệu cho producer
             
             await sleep(1500); // Giả lập thời gian tiêu thụ
         }
     }
 
+    // Khởi động các producer và consumer
     for (let i = 0; i < 2; i++) {
         producer(i);
         consumer(i);
     }
 }
+
 
 
 // Hàm cho Monitor (Producer-Consumer)
