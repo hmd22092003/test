@@ -28,18 +28,57 @@
 
       <!-- Right Side - Buttons and Display Box -->
       <div class="col-md-6">
-        <!-- Row 1: Button and Combobox -->
-        <div class="row mb-3 d-flex align-items-center">
-          <div class="col-6 d-flex justify-content-start">
-            <button id="runButton" class="btn btn-primary btn-lg">
-              <i class="fas fa-play"></i> Run
-            </button>
+        <!-- Triết Gia Problem -->
+        <div class="mb-4">
+          <h4>Triết Gia</h4>
+          <div class="row mb-3 d-flex align-items-center">
+            <div class="col-6 d-flex justify-content-start">
+              <button id="runPhilosopher" class="btn btn-primary btn-lg">
+                <i class="fas fa-play"></i> Run
+              </button>
+            </div>
+            <div class="col-6 d-flex justify-content-end">
+              <select id="philosopherSelect" class="form-select form-select-lg">
+                <option value="Semaphore">Semaphore</option>
+                <option value="Monitor">Monitor</option>
+              </select>
+            </div>
           </div>
-          <div class="col-6 d-flex justify-content-end">
-            <select id="optionSelect" class="form-select form-select-lg">
-              <option value="Semaphore">Semaphore</option>
-              <option value="Monitor">Monitor</option>
-            </select>
+        </div>
+
+        <!-- Đọc Ghi Problem -->
+        <div class="mb-4">
+          <h4>Đọc Ghi (Readers-Writers)</h4>
+          <div class="row mb-3 d-flex align-items-center">
+            <div class="col-6 d-flex justify-content-start">
+              <button id="runRW" class="btn btn-primary btn-lg">
+                <i class="fas fa-play"></i> Run
+              </button>
+            </div>
+            <div class="col-6 d-flex justify-content-end">
+              <select id="rwSelect" class="form-select form-select-lg">
+                <option value="Semaphore">Semaphore</option>
+                <option value="Monitor">Monitor</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sản Xuất Tiêu Thụ Problem -->
+        <div class="mb-4">
+          <h4>Sản Xuất Tiêu Thụ (Producer-Consumer)</h4>
+          <div class="row mb-3 d-flex align-items-center">
+            <div class="col-6 d-flex justify-content-start">
+              <button id="runPC" class="btn btn-primary btn-lg">
+                <i class="fas fa-play"></i> Run
+              </button>
+            </div>
+            <div class="col-6 d-flex justify-content-end">
+              <select id="pcSelect" class="form-select form-select-lg">
+                <option value="Semaphore">Semaphore</option>
+                <option value="Monitor">Monitor</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -49,7 +88,7 @@
           <input type="number" id="numPhilosophers" class="form-control" value="5" min="1">
         </div>
 
-        <!-- Row 2: Display Box -->
+        <!-- Display Box -->
         <div id="contentBox" class="content-box p-3 w-100 border border-dark" style="width: 500px;height: 600px;border-radius: 5px; overflow-y: auto;">
           Kết quả sẽ hiển thị ở đây...
         </div>
