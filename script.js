@@ -160,7 +160,7 @@ async function semaphoreProducerConsumer() {
     }
 
     async function consumer(id) {
-        while (totalProduced > 0) { // Điều kiện dừng tiêu thụ
+        while (totalProduced > 0 || semaphoreFull.count > 0) { // Điều kiện dừng tiêu thụ
             await semaphoreFull.wait(); // Chờ có sản phẩm trong buffer
             const item = buffer.shift(); // Lấy sản phẩm từ buffer
             displayResult(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
