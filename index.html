@@ -28,7 +28,7 @@
 
       <!-- Right Side - Buttons and Display Box -->
       <div class="col-md-6">
-        <!-- Row 1: Button and Combobox -->
+        <!-- Row 1: Button và Combobox Semaphore/Monitor -->
         <div class="row mb-3 d-flex align-items-center">
           <div class="col-6 d-flex justify-content-start">
             <button id="runButton" class="btn btn-primary btn-lg">
@@ -36,20 +36,32 @@
             </button>
           </div>
           <div class="col-6 d-flex justify-content-end">
-            <select id="optionSelect" class="form-select form-select-lg">
+            <select id="algorithmSelect" class="form-select form-select-lg">
               <option value="Semaphore">Semaphore</option>
               <option value="Monitor">Monitor</option>
             </select>
           </div>
         </div>
 
-        <!-- Input Box for Custom Problem -->
+        <!-- Row 2: Combobox cho Producer-Consumer và Reader-Writer -->
+        <div class="row mb-3 d-flex align-items-center">
+          <div class="col-12">
+            <select id="problemSelect" class="form-select form-select-lg">
+              <option value="DiningPhilosophers">Triết gia</option>
+              <option value="ProducerConsumer">Producer-Consumer</option>
+              <option value="ReaderWriter">Reader-Writer</option>
+            </select>
+          </div>
+        </div>
+
+
+        <!-- Input Box cho vấn đề tuỳ chỉnh -->
         <div class="mb-3">
           <label for="numPhilosophers" class="form-label">Nhập số triết gia:</label>
           <input type="number" id="numPhilosophers" class="form-control" value="5" min="1">
         </div>
 
-        <!-- Row 2: Display Box -->
+        <!-- Row 3: Display Box -->
         <div id="contentBox" class="content-box p-3 w-100 border border-dark" style="width: 500px;height: 600px;border-radius: 5px; overflow-y: auto;">
           Kết quả sẽ hiển thị ở đây...
         </div>
