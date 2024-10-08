@@ -1,6 +1,10 @@
 // Chọn các phần tử DOM
-const runButton = document.getElementById('runButton');
-const optionSelect = document.getElementById('optionSelect');
+const runPhilosopherButton = document.getElementById('runPhilosopher');
+const runRWButton = document.getElementById('runRW');
+const runPCButton = document.getElementById('runPC');
+const philosopherSelect = document.getElementById('philosopherSelect');
+const rwSelect = document.getElementById('rwSelect');
+const pcSelect = document.getElementById('pcSelect');
 const numPhilosophersInput = document.getElementById('numPhilosophers');
 const contentBox = document.getElementById('contentBox');
 
@@ -66,8 +70,10 @@ class Monitor {
     }
 }
 
-// Hàm cho Semaphore
-async function semaphore() {
+// ================= Triết Gia (Philosopher) Problem =================
+
+// Hàm cho Semaphore (Triết Gia)
+async function semaphorePhilosophers() {
     const chopsticks = new Array(numPhilosophers).fill(false);
     const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
 
@@ -111,8 +117,8 @@ async function semaphore() {
     }
 }
 
-// Hàm cho Monitor
-async function monitor() {
+// Hàm cho Monitor (Triết Gia)
+async function monitorPhilosophers() {
     const chopsticks = new Array(numPhilosophers).fill(false);
     const monitor = new Monitor();
 
@@ -153,15 +159,201 @@ async function monitor() {
         philosophers[i] = philosopher(i);
     }
 }
-// Sự kiện click cho nút "Run"
-runButton.addEventListener('click', () => {
+
+// ================= Readers-Writers Problem =================
+
+// Semaphore-based Readers-Writers
+async function semaphoreRW() {
+    let readerCount = 0;
+    const mutex = new Semaphore(1);
+    const rwLock = new Semaphore(1);
+
+    async function reader(id) {
+        await mutex.wait();
+        readerCount++;
+        if (readerCount === 1) {
+            await rwLock.wait();
+        }
+        mutex.signal();
+
+        displayResult(`Reader ${id} is reading...`);
+        await sleep(1000); // Reading time
+        displayResult(`Reader ${id} finished reading`);
+
+        await mutex.wait();
+        readerCount--;
+        if (readerCount === 0) {
+            rwLock.signal();
+        }
+        mutex.signal();
+    }
+
+    async function writer(id) {
+        await rwLock.wait();
+        displayResult(`Writer ${id} is writing...`);
+        await sleep(1000); // Writing time
+        displayResult(`Writer ${id} finished writing`);
+        rwLock.signal();
+    }
+
+    // Launch some readers and writers
+    for (let i = 0; i < 3; i++) {
+        reader(i);
+        writer(i);
+    }
+}
+
+// Monitor-based Readers-Writers
+async function monitorRW() {
+    let readerCount = 0;
+    const monitor = new Monitor();
+
+    async function reader(id) {
+        await monitor.enter();
+        readerCount++;
+        if (readerCount === 1) {
+            await monitor.enter();
+        }
+        monitor.leave();
+
+        displayResult(`Reader ${id} is reading...`);
+        await sleep(1000); // Reading time
+        displayResult(`Reader ${id} finished reading`);
+
+        await monitor.enter();
+        readerCount--;
+        if (readerCount === 0) {
+            monitor.leave();
+        }
+        monitor.leave();
+    }
+
+    async function writer(id) {
+        await monitor.enter();
+        displayResult(`Writer ${id} is writing...`);
+        await sleep(1000); // Writing time
+        displayResult(`Writer ${id} finished writing`);
+        monitor.leave();
+    }
+
+    // Launch some readers and writers
+    for (let i = 0; i < 3; i++) {
+        reader(i);
+        writer(i);
+    }
+}
+
+// ================= Producer-Consumer Problem =================
+
+// Semaphore-based Producer-Consumer
+async function semaphorePC() {
+    const buffer = [];
+    const maxBufferSize = 5;
+    const mutex = new Semaphore(1);
+    const empty = new Semaphore(maxBufferSize);
+    const full = new Semaphore(0);
+
+    async function producer(id) {
+        while (true) {
+            await empty.wait();
+            await mutex.wait();
+            if (buffer.length < maxBufferSize) {
+                buffer.push(`Item by producer ${id}`);
+                displayResult(`Producer ${id} produced an item.`);
+            }
+            mutex.signal();
+            full.signal();
+            await sleep(1000); // Producing time
+        }
+    }
+
+    async function consumer(id) {
+        while (true) {
+            await full.wait();
+            await mutex.wait();
+            if (buffer.length > 0) {
+                buffer.pop();
+                displayResult(`Consumer ${id} consumed an item.`);
+            }
+            mutex.signal();
+            empty.signal();
+            await sleep(1000); // Consuming time
+        }
+    }
+
+    // Launch some producers and consumers
+    producer(1);
+    consumer(1);
+}
+
+// Monitor-based Producer-Consumer
+async function monitorPC() {
+    const buffer = [];
+    const maxBufferSize = 5;
+    const monitor = new Monitor();
+
+    async function producer(id) {
+        while (true) {
+            await monitor.enter();
+            if (buffer.length < maxBufferSize) {
+                buffer.push(`Item by producer ${id}`);
+                displayResult(`Producer ${id} produced an item.`);
+            }
+            monitor.leave();
+            await sleep(1000); // Producing time
+        }
+    }
+
+    async function consumer(id) {
+        while (true) {
+            await monitor.enter();
+            if (buffer.length > 0) {
+                buffer.pop();
+                displayResult(`Consumer ${id} consumed an item.`);
+            }
+            monitor.leave();
+            await sleep(1000); // Consuming time
+        }
+    }
+
+    // Launch some producers and consumers
+    producer(1);
+    consumer(1);
+}
+
+// Sự kiện click cho nút "Run" (Philosopher)
+runPhilosopherButton.addEventListener('click', () => {
     contentBox.innerHTML = ""; // Xóa nội dung cũ
     numPhilosophers = parseInt(numPhilosophersInput.value);
-    const selectedOption = optionSelect.value;
+    const selectedOption = philosopherSelect.value;
 
     if (selectedOption === "Semaphore") {
-        semaphore();
+        semaphorePhilosophers();
     } else if (selectedOption === "Monitor") {
-        monitor();
+        monitorPhilosophers();
+    }
+});
+
+// Sự kiện click cho nút "Run" (Readers-Writers)
+runRWButton.addEventListener('click', () => {
+    contentBox.innerHTML = ""; // Xóa nội dung cũ
+    const selectedOption = rwSelect.value;
+
+    if (selectedOption === "Semaphore") {
+        semaphoreRW();
+    } else if (selectedOption === "Monitor") {
+        monitorRW();
+    }
+});
+
+// Sự kiện click cho nút "Run" (Producer-Consumer)
+runPCButton.addEventListener('click', () => {
+    contentBox.innerHTML = ""; // Xóa nội dung cũ
+    const selectedOption = pcSelect.value;
+
+    if (selectedOption === "Semaphore") {
+        semaphorePC();
+    } else if (selectedOption === "Monitor") {
+        monitorPC();
     }
 });
