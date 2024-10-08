@@ -1,14 +1,13 @@
 // Chọn các phần tử DOM
 const runButton = document.getElementById('runButton');
-const problemSelect = document.getElementById('problemSelect');
-const algorithmSelect = document.getElementById('algorithmSelect');
+const optionSelect = document.getElementById('optionSelect');
 const numPhilosophersInput = document.getElementById('numPhilosophers');
 const contentBox = document.getElementById('contentBox');
 
 // Khai báo các biến toàn cục
+let philosophers = [];
 let numPhilosophers = 5; // Giá trị mặc định
 let maxEats = 1; // Giới hạn số lần ăn tối đa cho mỗi triết gia
-let maxProduceConsume = 5; // Giới hạn số lần sản xuất tiêu thụ cho Producer-Consumer
 
 // Hàm để hiển thị kết quả
 function displayResult(message) {
@@ -67,148 +66,102 @@ class Monitor {
     }
 }
 
-// ==================== COMMON FUNCTION FOR SEMAPHORE AND MONITOR ====================
+// Hàm cho Semaphore
+async function semaphore() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
 
-// Common function for running simulation
-async function runSimulation(type, approach, actions) {
-    const resources = {
-        chopsticks: new Array(numPhilosophers).fill(false), // for Philosopher problem
-        buffer: [], // for Producer-Consumer problem
-        maxBufferSize: 5, // buffer size for Producer-Consumer
-        readerCount: 0 // for Readers-Writers problem
-    };
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
 
-    // Create instances of Semaphore or Monitor based on the selected approach
-    const mutex = approach === "Semaphore" ? new Semaphore(1) : new Monitor();
-    const rwLock = approach === "Semaphore" ? new Semaphore(1) : null;
-    const empty = new Semaphore(resources.maxBufferSize);
-    const full = new Semaphore(0);
+        while (eats < maxEats) {
+            // Suy nghĩ
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            await sleep(1000); // Thời gian suy nghĩ
 
-    async function actionHandler(id) {
-        if (type === 'philosopher') {
-            await actions.philosopher(id, resources, mutex);
-        } else if (type === 'rw') {
-            await actions.rw(id, resources, mutex, rwLock);
-        } else if (type === 'pc') {
-            await actions.pc(id, resources, mutex, empty, full);
+            await semaphore.wait(); // Chờ đến lượt
+
+            // Kiểm tra xem cả hai chiếc đũa có sẵn không
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                // Lấy đũa
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+
+                // Ăn
+                await sleep(1000); // Thời gian ăn
+
+                // Thả đũa
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+
+            semaphore.signal(); // Giải phóng semaphore
         }
+
+        // Thông báo khi triết gia ra về
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
 
-    // Launch 5 entities for the simulation (philosophers, readers/writers, producers/consumers)
-    for (let i = 0; i < 5; i++) {
-        actionHandler(i);
+    // Khởi động triết gia
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
     }
 }
 
-// ==================== ACTIONS FOR EACH PROBLEM ====================
+// Hàm cho Monitor
+async function monitor() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const monitor = new Monitor();
 
-// Actions for Philosopher problem
-const philosopherActions = {
-    philosopher: async (id, resources, syncObject) => {
-        const { chopsticks } = resources;
-        let eats = 0;
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
 
         while (eats < maxEats) {
+            // Suy nghĩ
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
-            await sleep(1000);
+            await sleep(1000); // Thời gian suy nghĩ
 
-            await syncObject.enter(); // Monitor enter
-
-            // Lấy đũa nếu cả hai chiếc đũa đều sẵn sàng
+            await monitor.enter();
+            // Kiểm tra xem cả hai chiếc đũa có sẵn không
             if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
-                chopsticks[id] = chopsticks[(id + 1) % numPhilosophers] = true;
-                displayResult(`Triết gia số ${id}: đang ăn...`);
-                await sleep(1000);
+                // Lấy đũa
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
 
-                chopsticks[id] = chopsticks[(id + 1) % numPhilosophers] = false;
-                displayResult(`Triết gia số ${id}: đã ăn xong.`);
-                eats++;
+                // Ăn
+                await sleep(1000); // Thời gian ăn
+
+                // Thả đũa
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
             }
-
-            syncObject.leave(); // Monitor leave
+            monitor.leave(); // Giải phóng monitor
         }
-        displayResult(`Triết gia số ${id}: hoàn thành.`);
+
+        // Thông báo khi triết gia ra về
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
     }
-};
 
-// Actions for Readers-Writers problem
-const rwActions = {
-    rw: async (id, resources, mutex, rwLock) => {
-        const { readerCount } = resources;
-        const isReader = id % 2 === 0;
-
-        if (isReader) {
-            await mutex.enter();
-            resources.readerCount++;
-            if (resources.readerCount === 1 && rwLock) await rwLock.wait(); // Semaphore case
-            mutex.leave();
-
-            displayResult(`Reader ${id}: đang đọc...`);
-            await sleep(1000);
-
-            await mutex.enter();
-            resources.readerCount--;
-            if (resources.readerCount === 0 && rwLock) rwLock.signal(); // Semaphore case
-            mutex.leave();
-
-            displayResult(`Reader ${id}: hoàn thành.`);
-        } else {
-            await rwLock.wait();
-            displayResult(`Writer ${id}: đang viết...`);
-            await sleep(1000);
-            rwLock.signal();
-            displayResult(`Writer ${id}: hoàn thành.`);
-        }
+    // Khởi động triết gia
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
     }
-};
-
-// Actions for Producer-Consumer problem
-const pcActions = {
-    pc: async (id, resources, mutex, empty, full) => {
-        const isProducer = id % 2 === 0;
-        const { buffer, maxBufferSize } = resources;
-        let produceConsumeCount = 0;
-
-        if (isProducer) {
-            while (produceConsumeCount < maxProduceConsume) {
-                await empty.wait(); // Wait until there’s space in buffer
-                await mutex.enter();
-
-                if (buffer.length < maxBufferSize) {
-                    buffer.push(`Item by producer ${id}`);
-                    displayResult(`Producer ${id} đã sản xuất.`);
-                    produceConsumeCount++;
-                }
-
-                mutex.leave();
-                full.signal(); // Signal that buffer has items
-                await sleep(1000);
-            }
-        } else {
-            while (produceConsumeCount < maxProduceConsume) {
-                await full.wait(); // Wait until buffer has items
-                await mutex.enter();
-
-                if (buffer.length > 0) {
-                    buffer.pop();
-                    displayResult(`Consumer ${id} đã tiêu thụ.`);
-                    produceConsumeCount++;
-                }
-
-                mutex.leave();
-                empty.signal(); // Signal that buffer has space
-                await sleep(1000);
-            }
-        }
-    }
-};
-
-// ==================== EVENT LISTENERS FOR BUTTONS ====================
-
+}
+// Sự kiện click cho nút "Run"
 runButton.addEventListener('click', () => {
-    contentBox.innerHTML = ""; // Clear previous content
+    contentBox.innerHTML = ""; // Xóa nội dung cũ
     numPhilosophers = parseInt(numPhilosophersInput.value);
-    const selectedProblem = problemSelect.value;
-    const selectedAlgorithm = algorithmSelect.value;
-    runSimulation(selectedProblem, selectedAlgorithm, selectedProblem === 'philosopher' ? philosopherActions : selectedProblem === 'rw' ? rwActions : pcActions);
+    const selectedOption = optionSelect.value;
+
+    if (selectedOption === "Semaphore") {
+        semaphore();
+    } else if (selectedOption === "Monitor") {
+        monitor();
+    }
 });
