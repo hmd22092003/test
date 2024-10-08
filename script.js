@@ -1,18 +1,26 @@
-// Các biến DOM
+// Chọn các phần tử DOM
 const runButton = document.getElementById('runButton');
-const algorithmSelect = document.getElementById('algorithmSelect');
-const problemSelect = document.getElementById('problemSelect');
+const optionSelect = document.getElementById('optionSelect');
 const numPhilosophersInput = document.getElementById('numPhilosophers');
 const contentBox = document.getElementById('contentBox');
 
-// Biến toàn cục
-let numPhilosophers = 5;
-let buffer = [];
-let bufferLimit = 5;
-let inIndex = 0;
-let outIndex = 0;
+// Khai báo các biến toàn cục
+let philosophers = [];
+let numPhilosophers = 5; // Giá trị mặc định
+let maxEats = 1; // Giới hạn số lần ăn tối đa cho mỗi triết gia
 
-// Semaphore và Monitor từ mã gốc
+// Hàm để hiển thị kết quả
+function displayResult(message) {
+    contentBox.innerHTML += message + "<br>";
+    contentBox.scrollTop = contentBox.scrollHeight; // Cuộn xuống cùng
+}
+
+// Hàm tạm dừng (sleep)
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Khai báo Semaphore
 class Semaphore {
     constructor(count) {
         this.count = count;
@@ -35,6 +43,7 @@ class Semaphore {
     }
 }
 
+// Khai báo Monitor
 class Monitor {
     constructor() {
         this.lock = false;
@@ -57,118 +66,167 @@ class Monitor {
     }
 }
 
-// Hiển thị kết quả
-function displayResult(message) {
-    contentBox.innerHTML += message + "<br>";
-    contentBox.scrollTop = contentBox.scrollHeight;
+// Hàm cho Semaphore (Triết gia)
+async function semaphorePhilosophers() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const semaphore = new Semaphore(numPhilosophers - 1); // Chỉ có thể có n-1 triết gia ngồi cùng một lúc
+
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            await sleep(1000); // Thời gian suy nghĩ
+
+            await semaphore.wait(); // Chờ đến lượt
+
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+                await sleep(1000); // Thời gian ăn
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+
+            semaphore.signal(); // Giải phóng semaphore
+        }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
+    }
+
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
+    }
 }
 
-// Hàm Producer-Consumer sử dụng Semaphore
-async function producerConsumerSemaphore() {
-    const semaphoreEmpty = new Semaphore(bufferLimit);
-    const semaphoreFull = new Semaphore(0);
-    const mutex = new Semaphore(1);
+// Hàm cho Monitor (Triết gia)
+async function monitorPhilosophers() {
+    const chopsticks = new Array(numPhilosophers).fill(false);
+    const monitor = new Monitor();
+
+    async function philosopher(id) {
+        let eats = 0; // Đếm số lần ăn
+
+        while (eats < maxEats) {
+            displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
+            await sleep(1000); // Thời gian suy nghĩ
+
+            await monitor.enter(); // Nhập vào monitor
+
+            if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
+                chopsticks[id] = true;
+                chopsticks[(id + 1) % numPhilosophers] = true;
+                displayResult(`Triết gia số ${id}: đã có đủ hai chiếc đũa và đang ăn...`);
+                await sleep(1000); // Thời gian ăn
+                chopsticks[id] = false;
+                chopsticks[(id + 1) % numPhilosophers] = false;
+                displayResult(`Triết gia số ${id}: đã ăn xong và thả đũa...`);
+                eats++; // Tăng số lần ăn
+            }
+
+            monitor.leave(); // Giải phóng monitor
+        }
+
+        displayResult(`Triết gia số ${id}: đã ăn xong ${maxEats} lần và ra về.`);
+    }
+
+    for (let i = 0; i < numPhilosophers; i++) {
+        philosophers[i] = philosopher(i);
+    }
+}
+
+// Hàm cho Semaphore (Producer-Consumer)
+async function semaphoreProducerConsumer() {
+    const buffer = [];
+    const bufferSize = 5; // Kích thước của buffer
+    const semaphoreEmpty = new Semaphore(bufferSize); // Chờ có chỗ trống
+    const semaphoreFull = new Semaphore(0); // Chờ có sản phẩm
 
     async function producer(id) {
         while (true) {
-            await semaphoreEmpty.wait(); // Chờ bộ đệm trống
-            await mutex.wait();
-
-            // Sản xuất và đưa vào buffer
-            buffer[inIndex] = `Item ${inIndex}`;
-            displayResult(`Producer ${id} sản xuất: ${buffer[inIndex]}`);
-            inIndex = (inIndex + 1) % bufferLimit;
-
-            mutex.signal();
-            semaphoreFull.signal();
-            await sleep(1000);
+            const item = `Sản phẩm ${id}`; // Tạo sản phẩm
+            await semaphoreEmpty.wait(); // Chờ có chỗ trống trong buffer
+            buffer.push(item); // Thêm sản phẩm vào buffer
+            displayResult(`Producer ${id}: đã thêm ${item} vào buffer`);
+            semaphoreFull.signal(); // Tín hiệu cho consumer
+            await sleep(1000); // Giả lập thời gian sản xuất
         }
     }
 
     async function consumer(id) {
         while (true) {
-            await semaphoreFull.wait(); // Chờ bộ đệm đầy
-            await mutex.wait();
-
-            // Tiêu thụ từ buffer
-            const item = buffer[outIndex];
-            displayResult(`Consumer ${id} tiêu thụ: ${item}`);
-            buffer[outIndex] = null;
-            outIndex = (outIndex + 1) % bufferLimit;
-
-            mutex.signal();
-            semaphoreEmpty.signal();
-            await sleep(1000);
+            await semaphoreFull.wait(); // Chờ có sản phẩm trong buffer
+            const item = buffer.shift(); // Lấy sản phẩm từ buffer
+            displayResult(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
+            semaphoreEmpty.signal(); // Tín hiệu cho producer
+            await sleep(1500); // Giả lập thời gian tiêu thụ
         }
     }
 
-    // Khởi động producers và consumers
-    producer(1);
-    consumer(1);
+    for (let i = 0; i < 2; i++) {
+        producer(i);
+        consumer(i);
+    }
 }
 
-// Hàm Reader-Writer sử dụng Semaphore
-async function readerWriterSemaphore() {
-    const semaphore = new Semaphore(1);
-    let readers = 0;
+// Hàm cho Monitor (Producer-Consumer)
+async function monitorProducerConsumer() {
+    const buffer = [];
+    const bufferSize = 5; // Kích thước của buffer
+    const monitorLock = new Monitor();
 
-    async function reader(id) {
+    async function producer(id) {
         while (true) {
-            await semaphore.wait();
-            readers++;
-            if (readers === 1) {
-                displayResult(`Reader ${id} bắt đầu đọc...`);
+            const item = `Sản phẩm ${id}`; // Tạo sản phẩm
+            await monitorLock.enter(); // Nhập vào monitor
+            if (buffer.length < bufferSize) {
+                buffer.push(item); // Thêm sản phẩm vào buffer
+                displayResult(`Producer ${id}: đã thêm ${item} vào buffer`);
             }
-            semaphore.signal();
-
-            await sleep(1000); // Thời gian đọc
-            displayResult(`Reader ${id} đã đọc xong.`);
-
-            await semaphore.wait();
-            readers--;
-            if (readers === 0) {
-                displayResult(`Reader ${id} kết thúc đọc.`);
-            }
-            semaphore.signal();
-
-            await sleep(1000);
+            monitorLock.leave(); // Rời khỏi monitor
+            await sleep(1000); // Giả lập thời gian sản xuất
         }
     }
 
-    async function writer(id) {
+    async function consumer(id) {
         while (true) {
-            await semaphore.wait();
-            displayResult(`Writer ${id} bắt đầu ghi...`);
-            await sleep(1000); // Thời gian ghi
-            displayResult(`Writer ${id} đã ghi xong.`);
-            semaphore.signal();
-            await sleep(1000);
+            await monitorLock.enter(); // Nhập vào monitor
+            if (buffer.length > 0) {
+                const item = buffer.shift(); // Lấy sản phẩm từ buffer
+                displayResult(`Consumer ${id}: đã tiêu thụ ${item} từ buffer`);
+            }
+            monitorLock.leave(); // Rời khỏi monitor
+            await sleep(1500); // Giả lập thời gian tiêu thụ
         }
     }
 
-    // Khởi động readers và writers
-    reader(1);
-    writer(1);
-}
-
-// Hàm xử lý sự kiện khi nhấn nút "Run"
-runButton.addEventListener('click', () => {
-    contentBox.innerHTML = ""; // Xóa nội dung cũ
-    numPhilosophers = parseInt(numPhilosophersInput.value) || 5; // Lấy số lượng triết gia
-
-    const selectedProblem = problemSelect.value;
-
-    if (selectedProblem === "DiningPhilosophers") {
-        const selectedOption = algorithmSelect.value;
-        // Add function for Dining Philosophers if needed
-    } else if (selectedProblem === "ProducerConsumer") {
-        producerConsumerSemaphore();
-    } else if (selectedProblem === "ReaderWriter") {
-        readerWriterSemaphore();
+    for (let i = 0; i < 2; i++) {
+        producer(i);
+        consumer(i);
     }
-});
-
-// Helper function to simulate sleep
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+// Sự kiện khi nhấn nút chạy
+runButton.addEventListener('click', async () => {
+    contentBox.innerHTML = ""; // Xóa nội dung trước khi chạy
+    numPhilosophers = parseInt(numPhilosophersInput.value); // Lấy số triết gia
+
+    const selectedOption = optionSelect.value;
+    switch (selectedOption) {
+        case 'Philosophers - Semaphore':
+            await semaphorePhilosophers();
+            break;
+        case 'Philosophers - Monitor':
+            await monitorPhilosophers();
+            break;
+        case 'Producer - Semaphore':
+            await semaphoreProducerConsumer();
+            break;
+        case 'Producer - Monitor':
+            await monitorProducerConsumer();
+            break;
+    }
+})
