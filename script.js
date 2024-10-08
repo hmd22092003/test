@@ -8,6 +8,7 @@ const contentBox = document.getElementById('contentBox');
 // Khai báo các biến toàn cục
 let numPhilosophers = 5; // Giá trị mặc định
 let maxEats = 1; // Giới hạn số lần ăn tối đa cho mỗi triết gia
+let maxProduceConsume = 5; // Giới hạn số lần sản xuất tiêu thụ cho Producer-Consumer
 
 // Hàm để hiển thị kết quả
 function displayResult(message) {
@@ -111,7 +112,7 @@ const philosopherActions = {
             displayResult(`Triết gia số ${id}: đang suy nghĩ...`);
             await sleep(1000);
 
-            await syncObject.wait(); // Semaphore/Monitor wait
+            await syncObject.enter(); // Monitor enter
 
             // Lấy đũa nếu cả hai chiếc đũa đều sẵn sàng
             if (!chopsticks[id] && !chopsticks[(id + 1) % numPhilosophers]) {
@@ -124,7 +125,7 @@ const philosopherActions = {
                 eats++;
             }
 
-            syncObject.signal(); // Semaphore/Monitor signal
+            syncObject.leave(); // Monitor leave
         }
         displayResult(`Triết gia số ${id}: hoàn thành.`);
     }
@@ -137,18 +138,18 @@ const rwActions = {
         const isReader = id % 2 === 0;
 
         if (isReader) {
-            await mutex.wait();
+            await mutex.enter();
             resources.readerCount++;
             if (resources.readerCount === 1 && rwLock) await rwLock.wait(); // Semaphore case
-            mutex.signal();
+            mutex.leave();
 
             displayResult(`Reader ${id}: đang đọc...`);
             await sleep(1000);
 
-            await mutex.wait();
+            await mutex.enter();
             resources.readerCount--;
             if (resources.readerCount === 0 && rwLock) rwLock.signal(); // Semaphore case
-            mutex.signal();
+            mutex.leave();
 
             displayResult(`Reader ${id}: hoàn thành.`);
         } else {
@@ -166,32 +167,35 @@ const pcActions = {
     pc: async (id, resources, mutex, empty, full) => {
         const isProducer = id % 2 === 0;
         const { buffer, maxBufferSize } = resources;
+        let produceConsumeCount = 0;
 
         if (isProducer) {
-            while (true) {
+            while (produceConsumeCount < maxProduceConsume) {
                 await empty.wait(); // Wait until there’s space in buffer
-                await mutex.wait();
+                await mutex.enter();
 
                 if (buffer.length < maxBufferSize) {
                     buffer.push(`Item by producer ${id}`);
                     displayResult(`Producer ${id} đã sản xuất.`);
+                    produceConsumeCount++;
                 }
 
-                mutex.signal();
+                mutex.leave();
                 full.signal(); // Signal that buffer has items
                 await sleep(1000);
             }
         } else {
-            while (true) {
+            while (produceConsumeCount < maxProduceConsume) {
                 await full.wait(); // Wait until buffer has items
-                await mutex.wait();
+                await mutex.enter();
 
                 if (buffer.length > 0) {
                     buffer.pop();
                     displayResult(`Consumer ${id} đã tiêu thụ.`);
+                    produceConsumeCount++;
                 }
 
-                mutex.signal();
+                mutex.leave();
                 empty.signal(); // Signal that buffer has space
                 await sleep(1000);
             }
